@@ -1,6 +1,8 @@
 package com.partners.hdfils_agent.domain.models
 
-data class User(
-    val username : String,
-    val password : String
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class UserSerializable(
+    val username : String
 )
