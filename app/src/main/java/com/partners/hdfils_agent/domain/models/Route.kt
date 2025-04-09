@@ -1,3 +1,12 @@
 package com.partners.hdfils_agent.domain.models
 
-data class Route()
+import com.partners.hdfils_agent.data.utils.Constants.Companion.routeList
+import com.partners.hdfils_agent.R
+
+data class Route(
+    val icon        : Int           = R.drawable.doc,
+    val title       : String        = "",
+    val routeName   : String        = ""
+){
+    fun bottomNavigationItems() = routeList
+}

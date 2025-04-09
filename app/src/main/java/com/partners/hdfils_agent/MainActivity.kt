@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.partners.hdfils_agent.presentation.ui.pages.AuthPage
+import com.partners.hdfils_agent.presentation.ui.pages.HomePage
 import com.partners.hdfils_agent.presentation.ui.theme.HdfilsagentTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             HdfilsagentTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) {
-                    AuthPage()
+                    HomePage()
                 }
             }
         }
