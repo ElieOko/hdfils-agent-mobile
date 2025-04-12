@@ -38,6 +38,7 @@ import com.partners.hdfils_agent.presentation.ui.components.Space
 fun CheckBopeto(){
     Scaffold {
         Column {
+            Space(y=35)
             Card(Modifier.padding(10.dp),colors = CardDefaults.cardColors(
                 containerColor = Color.White
             ), elevation = CardDefaults.cardElevation(5.dp)) {
