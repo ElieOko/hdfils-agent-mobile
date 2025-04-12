@@ -67,3 +67,65 @@ fun PreviewMButtonIcon(){
         }
     )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@Composable
+@Preview
+fun ButtonFigma(){
+    Button(
+        onClick = {}
+    ){
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
