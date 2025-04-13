@@ -44,19 +44,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.partners.hdfils_agent.presentation.ui.components.Space
 import com.partners.hdfils_agent.presentation.ui.theme.AnimatedBackgroundShapes
 import io.ktor.client.call.body
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.partners.hdfils_agent.R
+import com.partners.hdfils_agent.domain.models.AgentAuth
 import com.partners.hdfils_agent.domain.models.UserSerializable
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
+import com.partners.hdfils_agent.domain.route.ScreenRoute
 
 @Composable
-@Preview
-fun AuthPage(){
+
+fun AuthPage(navC: NavHostController) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var matricule by remember { mutableStateOf("") }
@@ -117,7 +120,7 @@ fun AuthPage(){
                     OutlinedTextField(
                         value = matricule,
                         onValueChange = { matricule = it },
-                        label = { Text("Identifiant") },
+                        label = { Text("Code Agent") },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.house),
@@ -146,13 +149,18 @@ fun AuthPage(){
                             coroutineScope.launch {
                                 isActive = false
                                 delay(6000)
-                                val response = ClientKtor().postData("user/login",UserSerializable(matricule))
+                                val response = ClientKtor().postData("agent/auth",AgentAuth(matricule))
                                 val status = response.status.value
                                 when(status){
                                     in 200..299 ->{
                                         isActive = true
                                         val res = response.body<ResponseAPI>()
                                         Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
+                                        navC.navigate(route = ScreenRoute.Home.name){
+                                            popUpTo(navC.graph.id){
+                                                inclusive = true
+                                            }
+                                        }
                                     }
                                     in 500..599 ->{
                                         isActive = true

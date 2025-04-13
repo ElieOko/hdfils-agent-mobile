@@ -61,7 +61,7 @@ val httpClientAndroid = HttpClient(Android) {
     }
 }
 class ClientKtor {
-    suspend fun postData(route: String, data: UserSerializable): HttpResponse {
+    suspend fun postData(route: String, data: Any): HttpResponse {
         return httpClientAndroid.post {
             url {
                 protocol = if (IS_PROD) URLProtocol.HTTPS else URLProtocol.HTTP
