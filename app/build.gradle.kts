@@ -50,6 +50,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    //
+    implementation("org.osmdroid:osmdroid-android:6.1.14")
+    implementation("com.google.code.gson:gson:2.8.7")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     //Navigation
     implementation(libs.androidx.navigation.compose)
     //Coroutines
