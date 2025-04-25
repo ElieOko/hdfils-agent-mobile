@@ -1,6 +1,9 @@
 package com.partners.hdfils_agent.presentation.ui.components
 
 import android.accounts.Account
+import android.annotation.SuppressLint
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -29,13 +32,18 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +58,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,6 +68,10 @@ import androidx.compose.ui.unit.sp
 import com.partners.hdfils_agent.domain.models.Client
 import kotlin.io.path.Path
 import androidx.core.graphics.toColorInt
+import com.partners.hdfils_agent.R
+import com.partners.hdfils_agent.data.shared.StoreData
+import com.partners.hdfils_agent.domain.models.TrashClean
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -173,11 +187,38 @@ fun ElegantCard() {
     }
 }
 
+@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 @Preview
 fun ClientStatsCardWithChart(
     accountClientSize : Double = 0.0
 ) {
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val clients = remember { mutableStateListOf<Client>() }
+    val sizeClient = remember { mutableIntStateOf(value = 0) }
+    try {
+        scope.launch {
+            StoreData(context).getDataClient.collect{
+                if(it.isNotEmpty()){
+                    it.forEach { i->
+                        if(i != null){
+                            clients.add(i)
+                            sizeClient.intValue = clients.size
+                            Toast.makeText(context,"$it",Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (e:Exception){
+        e.message?.let {
+            Log.e("ERROR************************************",
+                it,)
+        }
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -186,6 +227,7 @@ fun ClientStatsCardWithChart(
         shape = RoundedCornerShape(16.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+
             // Fond avec graphique minimal
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val width = size.width
@@ -222,7 +264,6 @@ fun ClientStatsCardWithChart(
                     style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                 )
             }
-
             // Contenu
             Row(
                 modifier = Modifier
@@ -239,7 +280,7 @@ fun ClientStatsCardWithChart(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = "$accountClientSize",
+                        text = "${sizeClient.intValue}",
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -271,6 +312,82 @@ fun ClientStatsCardWithChart(
     }
 }
 
+@Composable
+fun MCard(
+    items : TrashClean,
+    onClick : ()-> Unit = {},
+    onclickClean : ()-> Unit = {}
+){
+    var titleTrash = "Poubelle propre"
+    var colorTrash = Color.Green.copy(alpha = 0.5F)
+    var iconState = R.drawable.check
+    when(items.state_trash_id){
+        3 -> {
+            titleTrash = "Poubelle pleine"
+            iconState = R.drawable.run
+            colorTrash  =  Color.Red.copy(alpha = 0.7F)
+        }
+        2 -> {
+            titleTrash = "Nettoyage poubelle"
+            iconState = R.drawable.transfert
+            colorTrash = Color.Blue.copy(
+                alpha = 0.7F,
+            )
+        }
+        1 ->{
+            titleTrash = "Poubelle propre"
+            iconState = R.drawable.check
+        }
+    }
+    Card(
+        Modifier.padding(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Blue.copy(0.1f))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(5.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painterResource(iconState),
+                contentDescription = "",
+                modifier = Modifier.size(30.dp),
+                tint = colorTrash
+            )
+            Spacer(Modifier.width(10.dp))
+            Column() {
+                Label(titleTrash, fontWeight = FontWeight.Bold, color = Color.Black)
+                Label("Client : ${items.client?.nom} ${items.client?.prenom}", fontWeight = FontWeight.Bold, color = Color.Black)
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Absolute.Right
+            ) {
+                IconButton(
+                    onClick = {
+                        onClick()
+                    }
+                ) {
+                    Icon(
+                        painterResource(R.drawable.detail),
+                        contentDescription = null,
+                        tint = Color.Blue.copy(0.7f),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onclickClean
+                ) {
+                    Icon(
+                        painterResource(R.drawable.trash_clean),
+                        modifier = Modifier.size(23.dp),
+                        tint = Color.Red.copy(0.7f),
+                        contentDescription = null
+                    )
+                }
+            }
+        }
+    }
+}
 @Composable
 @Preview
 fun WasteCollectionStatsCard() {

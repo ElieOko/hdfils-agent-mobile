@@ -3,6 +3,7 @@ package com.partners.hdfils_agent.presentation.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absoluteOffset
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -35,7 +37,8 @@ import com.partners.hdfils_agent.R
 
 @Composable
 fun TopBar(
-    username: String = "elieoko"
+    username: String = "elieoko",
+    onclick : ()-> Unit = {}
 ){
     val rainbowColorsBrush = remember {
         Brush.sweepGradient(
@@ -65,15 +68,15 @@ fun TopBar(
                     )
             )
             Column(Modifier.padding(10.dp)) {
-                Label("Kin ezo bonga")
+                Label("Kin ezo bonga", color = Color.Black)
                 Space(y = 1)
-                Label("@$username", modifier = Modifier.absoluteOffset(x = 7.dp))
+                Label("@$username", modifier = Modifier.absoluteOffset(x = 7.dp),color = Color.Black)
             }
-//            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-//                MIcon(Icons.Default.Notifications)
-//                Space(x = 10)
-//                MIcon(Icons.Default.Create)
-//            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick =onclick) {
+                    Icon(painterResource(R.drawable.transfert), contentDescription = "", modifier = Modifier.size(34.dp))
+                }
+            }
         }
     }
 
