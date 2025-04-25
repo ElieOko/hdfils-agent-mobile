@@ -1,5 +1,6 @@
 package com.partners.hdfils_agent.presentation.ui.pages
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -41,7 +42,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -51,20 +51,26 @@ import io.ktor.client.call.body
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.partners.hdfils_agent.R
+import com.partners.hdfils_agent.data.shared.StoreData
+import com.partners.hdfils_agent.data.utils.EndPoint.agentAuth
+import com.partners.hdfils_agent.domain.models.Agent
 import com.partners.hdfils_agent.domain.models.AgentAuth
-import com.partners.hdfils_agent.domain.models.UserSerializable
+import com.partners.hdfils_agent.domain.models.TrashClean
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
+import com.partners.hdfils_agent.domain.remote.ResponseAPIGenirc
 import com.partners.hdfils_agent.domain.route.ScreenRoute
 
 @Composable
 
-fun AuthPage(navC: NavHostController) {
+fun AuthPage(navC: NavHostController, isConnected: Boolean) {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var matricule by remember { mutableStateOf("") }
     var isAnimating by remember { mutableStateOf(false) }
     var isActive by remember { mutableStateOf(true) }
+    val ctx = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -142,43 +148,78 @@ fun AuthPage(navC: NavHostController) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     )
-
                     Space(y=20)
                     Button(
                         onClick = {
-                            coroutineScope.launch {
-                                isActive = false
-                                delay(6000)
-                                val response = ClientKtor().postData("agent/auth",AgentAuth(matricule))
-                                val status = response.status.value
-                                when(status){
-                                    in 200..299 ->{
-                                        isActive = true
-                                        val res = response.body<ResponseAPI>()
-                                        Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
-                                        navC.navigate(route = ScreenRoute.Home.name){
-                                            popUpTo(navC.graph.id){
-                                                inclusive = true
+                            try {
+                                if(isConnected){
+                                    coroutineScope.launch {
+                                        isActive = false
+                                        delay(6000)
+                                        val response = ClientKtor().postData(agentAuth,AgentAuth(matricule))
+                                        val status = response.status.value
+                                        when(status){
+                                            in 200..299 ->{
+                                                isActive = true
+                                                val res = response.body<ResponseAPIGenirc>()
+                                                Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
+                                                scope.launch {
+                                                    StoreData(context).saveDataAgentAuth(
+                                                        Agent(
+                                                            code = res.agent.code,
+                                                            nom = res.agent.nom,
+                                                            postnom = res.agent.postnom,
+                                                            prenom = res.agent.prenom,
+                                                            genre = res.agent.genre,
+                                                            telephone = res.agent.telephone,
+                                                            address = res.agent.address)
+                                                    )
+                                                }
+                                                if(res.trash_client.isNotEmpty()){
+                                                    scope.launch {
+                                                        val x = res.trash_client.toList()
+                                                        StoreData(context).saveDataClientTrash(x)
+                                                    }
+                                                }
+
+                                                if (res.client.isNotEmpty()){
+                                                    scope.launch {
+                                                        StoreData(context).saveDataClient(res.client)
+                                                    }
+                                                }
+                                                navC.navigate(route = ScreenRoute.Home.name){
+                                                    popUpTo(navC.graph.id){
+                                                        inclusive = true
+                                                    }
+                                                }
                                             }
+                                            in 500..599 ->{
+                                                isActive = true
+                                                Toast.makeText(context,"Erreur serveur",Toast.LENGTH_LONG).show()
+                                            }
+                                            in 400..499 ->{
+                                                isActive = true
+                                                val res = response.body<ResponseAPI>()
+                                                Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
+                                            }
+
                                         }
                                     }
-                                    in 500..599 ->{
-                                        isActive = true
-                                        Toast.makeText(context,"Erreur serveur",Toast.LENGTH_LONG).show()
-                                    }
-                                    in 400..499 ->{
-                                        isActive = true
-                                        val res = response.body<ResponseAPI>()
-                                        Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
-                                    }
-
+                                }
+                                else{
+                                    Toast.makeText(ctx,"Vous n'êtes pas connecté veuillez vérifier votre connexion !!!",Toast.LENGTH_LONG).show()
+                                }
+                            }
+                            catch (e:Exception){
+                                e.message?.let {
+                                    Log.e("ERROR************************************",
+                                        it,)
                                 }
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor =  Color.Black,
-//                            contentColor = Color(0xFF6C63FF),
                             disabledContentColor = Color(0xFF080624),
                             disabledContainerColor = Color(0xFF080624)
                         ),
@@ -187,8 +228,6 @@ fun AuthPage(navC: NavHostController) {
                     ) {
                         Text(text = if(isActive) "Se connecter" else "Chargement...", fontSize = 16.sp, color = Color.White)
                     }
-
-
                     Space(y=30)
                 }
             }

@@ -3,6 +3,8 @@ package com.partners.hdfils_agent.presentation.ui.pages
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -15,25 +17,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import com.partners.hdfils_agent.domain.models.Route
-import com.partners.hdfils_agent.domain.route.ScreenRoute
 import com.partners.hdfils_agent.presentation.ui.components.ClientStatsCardWithChart
 import com.partners.hdfils_agent.presentation.ui.components.Space
+import com.partners.hdfils_agent.presentation.ui.components.TopBar
 import com.partners.hdfils_agent.presentation.ui.components.WasteCollectionStatsCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun HomePageMain(navC: NavHostController) {
+fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
     val scrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
 
     var navigationSelectedItem by remember {
@@ -62,13 +62,13 @@ fun HomePageMain(navC: NavHostController) {
                             },
                             onClick = {
                             navigationSelectedItem = index
-                            navC.navigate(navigationItem.routeName) {
-                                popUpTo(navC.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+//                            navC.navigate(navigationItem.routeName) {
+//                                popUpTo(navC.graph.findStartDestination().id) {
+//                                    saveState = true
+//                                }
+//                                launchSingleTop = true
+//                                restoreState = true
+//                            }
                             }
                         )
                     }
@@ -78,13 +78,21 @@ fun HomePageMain(navC: NavHostController) {
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     ) {
 
+        when(navigationSelectedItem){
+            0 -> HomePage(navC)
+            1 -> InscriptionPage(isConnected)
+            2 -> CheckBopeto(isConnected)
+        }
     }
 }
 
 @Composable
 fun HomePage(navC: NavHostController) {
-    Column {
-        Space(y = 30)
+    val scope = rememberCoroutineScope()
+
+    Column(Modifier.verticalScroll(rememberScrollState())) {
+        TopBar()
+        Space(y = 4)
         ClientStatsCardWithChart()
         WasteCollectionStatsCard()
     }
