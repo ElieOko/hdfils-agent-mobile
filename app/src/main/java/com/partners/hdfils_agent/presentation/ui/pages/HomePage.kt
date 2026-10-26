@@ -1,5 +1,7 @@
 package com.partners.hdfils_agent.presentation.ui.pages
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,12 +27,18 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import com.partners.hdfils_agent.domain.models.Route
 import com.partners.hdfils_agent.presentation.ui.components.ClientStatsCardWithChart
@@ -48,6 +56,7 @@ fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
     var navigationSelectedItem by remember {
         mutableIntStateOf(0)
     }
+    val focusManager = LocalFocusManager.current
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -55,7 +64,12 @@ fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
             if (!keyboardOpen) {
                 AppBottomBar(
                     selectedIndex = navigationSelectedItem,
-                    onSelect = { navigationSelectedItem = it }
+                    onSelect = { index ->
+                        if (index != navigationSelectedItem) {
+                            focusManager.clearFocus()
+                            navigationSelectedItem = index
+                        }
+                    }
                 )
             }
         }
@@ -66,13 +80,54 @@ fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
                 .imePadding()
                 .fillMaxSize()
         ) {
-            when (navigationSelectedItem) {
-                0 -> HomePage(isConnected)
-                1 -> ClientSection(isConnected)
-                2 -> CheckBopeto(isConnected)
-                3 -> ProfilePage(navC, isConnected)
+            PersistentTab(visible = navigationSelectedItem == 0) {
+                HomePage(isConnected)
+            }
+            PersistentTab(visible = navigationSelectedItem == 1) {
+                ClientSection(isConnected = isConnected, active = navigationSelectedItem == 1)
+            }
+            PersistentTab(visible = navigationSelectedItem == 2) {
+                CheckBopeto(isConnected)
+            }
+            PersistentTab(visible = navigationSelectedItem == 3) {
+                ProfilePage(navC, isConnected)
             }
         }
+    }
+}
+
+@Composable
+private fun PersistentTab(
+    visible: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 180),
+        label = "tab"
+    )
+    Box(
+        Modifier
+            .fillMaxSize()
+            .zIndex(if (visible) 1f else 0f)
+            .graphicsLayer { this.alpha = alpha }
+            .focusProperties { canFocus = visible }
+            .then(
+                if (visible) {
+                    Modifier
+                } else {
+                    Modifier.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                event.changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+                }
+            )
+    ) {
+        content()
     }
 }
 

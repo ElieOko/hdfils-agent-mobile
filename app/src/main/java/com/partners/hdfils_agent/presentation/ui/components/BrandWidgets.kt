@@ -29,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -216,11 +218,13 @@ fun TrancheSelect(
     selected: String,
     onSelect: (String) -> Unit,
     options: List<String>,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it }
+        onExpandedChange = { expanded = it },
+        modifier = modifier
     ) {
         OutlinedTextField(
             value = selected,
@@ -230,7 +234,7 @@ fun TrancheSelect(
             placeholder = { Text(placeholder) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = brandFieldColors(),
-            textStyle = androidx.compose.ui.text.TextStyle(color = Ink),
+            textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold),
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier
@@ -240,17 +244,22 @@ fun TrancheSelect(
         )
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = Color.White,
+            tonalElevation = 0.dp,
+            shadowElevation = 8.dp
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
                     text = {
                         Text(
                             option,
-                            color = Ink,
-                            fontWeight = if (option == selected) FontWeight.Bold else FontWeight.Normal
+                            color = Color.Black,
+                            fontWeight = FontWeight.Bold
                         )
                     },
+                    colors = whiteMenuItemColors(),
                     onClick = {
                         onSelect(option)
                         expanded = false
@@ -260,6 +269,14 @@ fun TrancheSelect(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun whiteMenuItemColors() = MenuDefaults.itemColors(
+    textColor = Color.Black,
+    leadingIconColor = BrandBlue,
+    disabledTextColor = Color.Black,
+)
 
 @Composable
 fun PrimaryButton(
@@ -370,7 +387,9 @@ fun SearchableCommuneField(
     onSelect: (Commune) -> Unit,
 ) {
     val communes = remember { Commune().communeList() }
-    var query by remember(resetKey) { mutableStateOf("") }
+    var query by remember(resetKey) {
+        mutableStateOf(communes.firstOrNull { it.id == selectedId }?.nom.orEmpty())
+    }
     var expanded by remember { mutableStateOf(false) }
     val filtered = remember(query, selectedId, communes) {
         val selectedName = communes.firstOrNull { it.id == selectedId }?.nom
@@ -403,7 +422,7 @@ fun SearchableCommuneField(
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
                 colors = brandFieldColors(),
-                textStyle = androidx.compose.ui.text.TextStyle(color = Ink),
+                textStyle = TextStyle(color = Color.Black, fontWeight = FontWeight.Bold),
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -413,11 +432,22 @@ fun SearchableCommuneField(
             )
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = Color.White,
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp
             ) {
                 if (filtered.isEmpty()) {
                     DropdownMenuItem(
-                        text = { Text("Aucune commune trouvée", color = InkMuted) },
+                        text = {
+                            Text(
+                                "Aucune commune trouvée",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        colors = whiteMenuItemColors(),
                         onClick = { expanded = false },
                         enabled = false
                     )
@@ -427,10 +457,11 @@ fun SearchableCommuneField(
                             text = {
                                 Text(
                                     commune.nom,
-                                    color = Ink,
-                                    fontWeight = if (commune.id == selectedId) FontWeight.Bold else FontWeight.Normal
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold
                                 )
                             },
+                            colors = whiteMenuItemColors(),
                             leadingIcon = if (commune.id == selectedId) {
                                 { Icon(Icons.Default.Check, contentDescription = null, tint = BrandBlue) }
                             } else {

@@ -50,6 +50,7 @@ import com.partners.hdfils_agent.data.utils.Constants.Companion.listTranche
 import com.partners.hdfils_agent.data.utils.EndPoint.clientAction
 import com.partners.hdfils_agent.domain.models.Client
 import com.partners.hdfils_agent.domain.models.ClientCreate
+import com.partners.hdfils_agent.domain.models.kinshasaNowStamp
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
 import com.partners.hdfils_agent.presentation.ui.components.AppField
@@ -65,24 +66,71 @@ import io.ktor.client.call.body
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+class ClientFormState {
+    var resetKey by mutableIntStateOf(0)
+    var communeId by mutableIntStateOf(0)
+    var nom by mutableStateOf("")
+    var prenom by mutableStateOf("")
+    var telephone by mutableStateOf("")
+    var avenue by mutableStateOf("")
+    var quartier by mutableStateOf("")
+    var numeroParcelle by mutableStateOf("")
+    var montant by mutableStateOf("")
+    var devise by mutableStateOf("$")
+    var nombreTranches by mutableStateOf("")
+    var formError by mutableStateOf<String?>(null)
+
+    val isDirty: Boolean
+        get() = communeId != 0 ||
+            nom.isNotBlank() ||
+            prenom.isNotBlank() ||
+            telephone.isNotBlank() ||
+            avenue.isNotBlank() ||
+            quartier.isNotBlank() ||
+            numeroParcelle.isNotBlank() ||
+            montant.isNotBlank() ||
+            nombreTranches.isNotBlank() ||
+            devise != "$"
+
+    fun clear() {
+        communeId = 0
+        nom = ""
+        prenom = ""
+        telephone = ""
+        avenue = ""
+        quartier = ""
+        numeroParcelle = ""
+        montant = ""
+        devise = "$"
+        nombreTranches = ""
+        formError = null
+        resetKey += 1
+    }
+}
+
 @Composable
-fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
+fun InscriptionPage(
+    isConnected: Boolean,
+    form: ClientFormState = remember { ClientFormState() },
+    onBack: (() -> Unit)? = null,
+    onDone: (() -> Unit)? = null,
+) {
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     var isActive by remember { mutableStateOf(true) }
-    var resetKey by remember { mutableIntStateOf(0) }
-    var communeId by remember { mutableIntStateOf(0) }
-    var nom by remember { mutableStateOf("") }
-    var prenom by remember { mutableStateOf("") }
-    var telephone by remember { mutableStateOf("") }
-    var avenue by remember { mutableStateOf("") }
-    var quartier by remember { mutableStateOf("") }
-    var numeroParcelle by remember { mutableStateOf("") }
-    var montant by remember { mutableStateOf("") }
-    var devise by remember { mutableStateOf("") }
-    var nombreTranches by remember { mutableStateOf("") }
-    var formError by remember { mutableStateOf<String?>(null) }
     val ctx = LocalContext.current
+    val communeId = form.communeId
+    val nom = form.nom
+    val prenom = form.prenom
+    val telephone = form.telephone
+    val avenue = form.avenue
+    val quartier = form.quartier
+    val numeroParcelle = form.numeroParcelle
+    val montant = form.montant
+    val devise = form.devise
+    val nombreTranches = form.nombreTranches
+    val formError = form.formError
+    val resetKey = form.resetKey
 
     fun validate(): String? = when {
         communeId == 0 -> "Sélectionnez une commune"
@@ -103,14 +151,14 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
             .verticalScroll(rememberScrollState())
             .padding(bottom = 28.dp)
     ) {
-        if (onDone != null) {
+        if (onBack != null) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 4.dp, top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDone) {
+                IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Retour à la liste",
@@ -154,26 +202,26 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                 SearchableCommuneField(
                     resetKey = resetKey,
                     selectedId = communeId,
-                    onSelect = { communeId = it.id }
+                    onSelect = { form.communeId = it.id }
                 )
                 Spacer(Modifier.height(10.dp))
                 AppField(
                     value = nom,
-                    onValueChange = { nom = it },
+                    onValueChange = { form.nom = it },
                     label = "Nom",
                     icon = Icons.Default.Person
                 )
                 Spacer(Modifier.height(8.dp))
                 AppField(
                     value = prenom,
-                    onValueChange = { prenom = it },
+                    onValueChange = { form.prenom = it },
                     label = "Prénom",
                     icon = Icons.Default.Person
                 )
                 Spacer(Modifier.height(8.dp))
                 AppField(
                     value = telephone,
-                    onValueChange = { telephone = it },
+                    onValueChange = { form.telephone = it },
                     label = "Téléphone",
                     icon = Icons.Default.Phone,
                     keyboardType = KeyboardType.Phone
@@ -182,7 +230,7 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                 Row(Modifier.fillMaxWidth()) {
                     AppField(
                         value = avenue,
-                        onValueChange = { avenue = it },
+                        onValueChange = { form.avenue = it },
                         label = "Avenue",
                         icon = Icons.Default.Place,
                         modifier = Modifier.weight(1.4f)
@@ -190,7 +238,7 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                     Spacer(Modifier.width(8.dp))
                     AppField(
                         value = numeroParcelle,
-                        onValueChange = { numeroParcelle = it },
+                        onValueChange = { form.numeroParcelle = it },
                         label = "N°",
                         icon = Icons.Default.Home,
                         modifier = Modifier.weight(0.8f)
@@ -199,32 +247,39 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                 Spacer(Modifier.height(8.dp))
                 AppField(
                     value = quartier,
-                    onValueChange = { quartier = it },
+                    onValueChange = { form.quartier = it },
                     label = "Quartier",
                     icon = Icons.Default.Place
                 )
                 Spacer(Modifier.height(8.dp))
-                AppField(
-                    value = montant,
-                    onValueChange = { montant = it.filter(Char::isDigit).take(9) },
-                    label = "Montant de souscription",
-                    icon = Icons.Default.Info,
-                    keyboardType = KeyboardType.Number
-                )
-                Spacer(Modifier.height(8.dp))
-                TrancheSelect(
-                    label = "Devise",
-                    placeholder = "FC ou USD",
-                    selected = devise,
-                    onSelect = { devise = it },
-                    options = listDevise
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AppField(
+                        value = montant,
+                        onValueChange = { form.montant = it.filter(Char::isDigit).take(9) },
+                        label = "Montant",
+                        icon = Icons.Default.Info,
+                        keyboardType = KeyboardType.Number,
+                        modifier = Modifier.weight(1.55f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TrancheSelect(
+                        label = "Devise",
+                        placeholder = "$",
+                        selected = devise,
+                        onSelect = { form.devise = it },
+                        options = listDevise,
+                        modifier = Modifier.weight(0.72f)
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 TrancheSelect(
                     label = "Nombre de tranches",
                     placeholder = "Sélectionnez",
                     selected = nombreTranches,
-                    onSelect = { nombreTranches = it },
+                    onSelect = { form.nombreTranches = it },
                     options = listTranche
                 )
                 if (formError != null) {
@@ -243,7 +298,7 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                     loading = !isActive,
                     onClick = {
                         val error = validate()
-                        formError = error
+                        form.formError = error
                         if (error != null) return@PrimaryButton
                         if (!isConnected) {
                             Toast.makeText(
@@ -287,22 +342,12 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                                                 commune_id = created.commune_id,
                                                 montant_souscription = created.montant_souscription,
                                                 devise = created.devise,
-                                                nombre_tranches = created.nombre_tranches
+                                                nombre_tranches = created.nombre_tranches,
+                                                created_at = kinshasaNowStamp()
                                             )
                                         )
                                         Toast.makeText(ctx, res.message, Toast.LENGTH_LONG).show()
-                                        nom = ""
-                                        prenom = ""
-                                        numeroParcelle = ""
-                                        telephone = ""
-                                        avenue = ""
-                                        quartier = ""
-                                        montant = ""
-                                        devise = ""
-                                        nombreTranches = ""
-                                        communeId = 0
-                                        formError = null
-                                        resetKey += 1
+                                        form.clear()
                                         onDone?.invoke()
                                     }
                                     in 500..599 -> {
@@ -310,7 +355,7 @@ fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
                                     }
                                     in 400..499 -> {
                                         val res = response.body<ResponseAPI>()
-                                        formError = res.message
+                                        form.formError = res.message
                                         Toast.makeText(ctx, res.message, Toast.LENGTH_LONG).show()
                                     }
                                     else -> {

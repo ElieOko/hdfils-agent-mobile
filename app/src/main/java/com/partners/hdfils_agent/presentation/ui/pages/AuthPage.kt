@@ -52,6 +52,7 @@ import com.partners.hdfils_agent.domain.route.ScreenRoute
 import com.partners.hdfils_agent.presentation.ui.components.AppField
 import com.partners.hdfils_agent.presentation.ui.components.AppLogo
 import com.partners.hdfils_agent.presentation.ui.components.PrimaryButton
+import com.partners.hdfils_agent.presentation.ui.components.SessionMemory
 import com.partners.hdfils_agent.presentation.ui.theme.AppBackground
 import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueDeep
 import com.partners.hdfils_agent.presentation.ui.theme.InkMuted
@@ -92,11 +93,13 @@ fun AuthPage(navC: NavHostController, isConnected: Boolean) {
                         val res = response.body<ResponseAPIGenirc>()
                         val store = StoreData(context)
                         store.saveDataAgentAuth(res.agent)
+                        SessionMemory.agent = res.agent
                         if (res.trash_client.isNotEmpty()) {
                             store.saveDataClientTrash(res.trash_client)
+                            SessionMemory.trash = res.trash_client
                         }
                         if (res.client.isNotEmpty()) {
-                            store.saveDataClient(res.client)
+                            SessionMemory.clients = store.saveDataClient(res.client)
                         }
                         store.setLoggedIn(true)
                         Toast.makeText(context, res.message, Toast.LENGTH_LONG).show()
