@@ -74,15 +74,15 @@ fun SelectableOutlinedTextField(
         OutlinedTextField(
             value = textValue,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.White,
-                unfocusedBorderColor = Color.White,
-                focusedLabelColor = Color.White,
-                unfocusedLabelColor = Color.White,
-                cursorColor = Color.White,
-                focusedLeadingIconColor = Color.White,
-                unfocusedLeadingIconColor = Color.White
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Black,
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Black,
+                cursorColor = Color.Black,
+                focusedLeadingIconColor = Color.Black,
+                unfocusedLeadingIconColor = Color.Black
             ),
-            textStyle = TextStyle(color = Color.White),
+            textStyle = TextStyle(color = Color.Black),
             onValueChange = { textValue = it },
             label = { Text(title) },
             shape = RoundedCornerShape(10.dp),
@@ -96,7 +96,7 @@ fun SelectableOutlinedTextField(
                     Icon(
                         if (!expanded) Icons.Outlined.KeyboardArrowDown else Icons.Outlined.KeyboardArrowUp,
                         contentDescription = "Sélectionner",
-                        tint = Color.White,
+                        tint = Color.Black,
                         modifier = Modifier.padding(8.dp)
                     )
                 }

@@ -1,5 +1,8 @@
 package com.partners.hdfils_agent.domain.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Commune(
     val id  : Int = 0,
     val nom : String = ""
