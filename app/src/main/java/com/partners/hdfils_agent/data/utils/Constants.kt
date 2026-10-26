@@ -27,13 +27,7 @@ class Constants {
         val listGenre = listOf("Mr(M)", "Mme(F)")
         val listVille = listOf("Kinshasa", "Boma", "Matadi")
         val listCommune = Commune().communeList()
-        val listTranche = listOf(
-            "Tranche 1",
-            "Tranche 2",
-            "Tranche 3",
-            "Tranche 4",
-            "Tranche 6",
-            "Tranche 12"
-        )
+        val listDevise = listOf("FC", "USD")
+        val listTranche = listOf("1", "2", "3", "4", "6", "12")
     }
 }

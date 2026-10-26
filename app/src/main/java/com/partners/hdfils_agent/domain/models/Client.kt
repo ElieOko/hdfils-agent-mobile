@@ -19,6 +19,20 @@ data class Client(
 )
 
 @Serializable
+data class ClientCreate(
+    val nom: String,
+    val prenom: String,
+    val telephone: String,
+    val commune_id: Int,
+    val avenue: String,
+    val quartier: String,
+    val numero_parcelle: String,
+    val montant_souscription: Int,
+    val devise: String,
+    val nombre_tranches: Int,
+)
+
+@Serializable
 data class Tranche(
     val numero: Int = 0,
     val montant: Int = 0,

@@ -200,6 +200,8 @@ fun AppField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrancheSelect(
+    label: String,
+    placeholder: String,
     selected: String,
     onSelect: (String) -> Unit,
     options: List<String>,
@@ -213,8 +215,8 @@ fun TrancheSelect(
             value = selected,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Tranche") },
-            placeholder = { Text("Sélectionnez une tranche") },
+            label = { Text(label) },
+            placeholder = { Text(placeholder) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = brandFieldColors(),
             textStyle = androidx.compose.ui.text.TextStyle(color = Ink),
