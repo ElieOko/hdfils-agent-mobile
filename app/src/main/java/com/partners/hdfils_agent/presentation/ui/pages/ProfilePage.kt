@@ -44,7 +44,6 @@ import com.partners.hdfils_agent.data.shared.StoreData
 import com.partners.hdfils_agent.domain.models.cityLabel
 import com.partners.hdfils_agent.domain.route.ScreenRoute
 import com.partners.hdfils_agent.presentation.ui.components.AppLogo
-import com.partners.hdfils_agent.presentation.ui.components.BrandWordmark
 import com.partners.hdfils_agent.presentation.ui.components.InfoRow
 import com.partners.hdfils_agent.presentation.ui.components.formatApiDate
 import com.partners.hdfils_agent.presentation.ui.components.rememberAgent
@@ -80,7 +79,17 @@ fun ProfilePage(navC: NavHostController, isConnected: Boolean) {
         ) {
             AppLogo(size = 108.dp)
             Spacer(Modifier.height(12.dp))
-            BrandWordmark()
+            Text(
+                text = "CasaSalubrite",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 26.sp
+            )
+            Text(
+                text = "CasaNayo Team Salubrite",
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 14.sp
+            )
             Text(
                 text = agent?.displayName() ?: "Profil agent",
                 color = Color.White,
@@ -103,6 +112,12 @@ fun ProfilePage(navC: NavHostController, isConnected: Boolean) {
                 modifier = Modifier
                     .background(Color.White.copy(alpha = 0.16f), RoundedCornerShape(20.dp))
                     .padding(horizontal = 12.dp, vertical = 4.dp)
+            )
+            Text(
+                text = "Session conservée sur cet appareil",
+                color = Color.White.copy(alpha = 0.82f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
 
@@ -167,7 +182,7 @@ fun ProfilePage(navC: NavHostController, isConnected: Boolean) {
             Button(
                 onClick = {
                     scope.launch {
-                        StoreData(context)
+                        StoreData(context).clearSession()
                         navC.navigate(ScreenRoute.Auth.name) {
                             popUpTo(navC.graph.id) { inclusive = true }
                         }
@@ -211,7 +226,7 @@ fun ProfilePage(navC: NavHostController, isConnected: Boolean) {
             }
         }
         Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-            Text("Casa Na yo · Agent", color = InkMuted, fontSize = 12.sp)
+            Text("CasaSalubrite", color = InkMuted, fontSize = 12.sp)
         }
         }
     }

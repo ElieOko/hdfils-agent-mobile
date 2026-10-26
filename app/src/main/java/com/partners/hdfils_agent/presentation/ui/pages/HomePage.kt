@@ -1,7 +1,11 @@
 package com.partners.hdfils_agent.presentation.ui.pages
 
-import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -31,15 +34,11 @@ import com.partners.hdfils_agent.presentation.ui.components.TopBar
 import com.partners.hdfils_agent.presentation.ui.components.WasteCollectionStatsCard
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
     val scrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
 
     var navigationSelectedItem by remember {
-        mutableIntStateOf(0)
-    }
-    var page by remember {
         mutableIntStateOf(0)
     }
     Scaffold(
@@ -76,22 +75,32 @@ fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
             }
         },
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-    ) {
-
-        when(navigationSelectedItem){
-            0 -> HomePage(navC)
-            1 -> InscriptionPage(isConnected)
-            2 -> CheckBopeto(isConnected)
+    ) { innerPadding ->
+        Box(
+            Modifier
+                .padding(bottom = innerPadding.calculateBottomPadding())
+                .imePadding()
+                .fillMaxSize()
+        ) {
+            when (navigationSelectedItem) {
+                0 -> HomePage(isConnected)
+                1 -> InscriptionPage(isConnected)
+                2 -> CheckBopeto(isConnected)
+                3 -> ProfilePage(navC, isConnected)
+            }
         }
     }
 }
 
 @Composable
-fun HomePage(navC: NavHostController) {
-    val scope = rememberCoroutineScope()
-
-    Column(Modifier.verticalScroll(rememberScrollState())) {
-        TopBar()
+fun HomePage(isConnected: Boolean) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+    ) {
+        TopBar(isConnected = isConnected)
         Space(y = 4)
         ClientStatsCardWithChart()
         WasteCollectionStatsCard()

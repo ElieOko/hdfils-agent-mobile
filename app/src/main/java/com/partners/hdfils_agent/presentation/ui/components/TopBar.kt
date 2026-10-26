@@ -22,7 +22,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,16 +34,28 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import com.partners.hdfils_agent.R
+import com.partners.hdfils_agent.data.shared.SyncResult
+import com.partners.hdfils_agent.data.shared.syncLocalData
+import com.partners.hdfils_agent.presentation.ui.theme.Ink
+import com.partners.hdfils_agent.presentation.ui.theme.InkMuted
+import kotlinx.coroutines.launch
 
 @Composable
 fun TopBar(
-    username: String = "elieoko",
-    onclick : ()-> Unit = {}
+    isConnected: Boolean = true,
 ){
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val agent = rememberAgent()
+    var askRefresh by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
     val rainbowColorsBrush = remember {
         Brush.sweepGradient(
             listOf(
@@ -51,7 +67,7 @@ fun TopBar(
         )
     }
     Column(Modifier.padding(10.dp)) {
-        Space(y = 20)
+        Space(y = 8)
         Row(
             Modifier
                 .fillMaxWidth(),
@@ -59,7 +75,7 @@ fun TopBar(
             Image(
                 painter = painterResource(R.drawable.logo_casa),
                 contentScale = ContentScale.Crop,
-                contentDescription = "",
+                contentDescription = "CasaSalubrite",
                 modifier = Modifier
                     .size(70.dp)
                     .clip(CircleShape).size(140.dp).border(
@@ -67,19 +83,61 @@ fun TopBar(
                         CircleShape
                     )
             )
-            Column(Modifier.padding(10.dp)) {
-                Label("Kin ezo bonga", color = Color.Black)
+            Column(Modifier.padding(10.dp).weight(1f)) {
+                Label(
+                    "CasaNayo Team Salubrite",
+                    color = Ink,
+                    fontWeight = FontWeight.Bold
+                )
                 Space(y = 1)
-                Label("@$username", modifier = Modifier.absoluteOffset(x = 7.dp),color = Color.Black)
+                Label(
+                    agent?.displayName() ?: "Agent",
+                    color = InkMuted
+                )
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick =onclick) {
-                    Icon(painterResource(R.drawable.transfert), contentDescription = "", modifier = Modifier.size(34.dp))
-                }
+            IconButton(
+                onClick = { if (!loading) askRefresh = true },
+                enabled = !loading
+            ) {
+                Icon(
+                    painterResource(R.drawable.transfert),
+                    contentDescription = "Actualiser",
+                    modifier = Modifier.size(34.dp)
+                )
             }
         }
     }
-
+    if (askRefresh) {
+        MAlertDialog(
+            dialogTitle = "Actualisation",
+            dialogText = "Voulez-vous actualiser les données de CasaSalubrite ?",
+            onDismissRequest = { askRefresh = false },
+            onConfirmation = {
+                askRefresh = false
+                if (!isConnected) {
+                    Toast.makeText(
+                        context,
+                        "Vous n'êtes pas connecté. Vérifiez votre connexion.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@MAlertDialog
+                }
+                scope.launch {
+                    loading = true
+                    val result = syncLocalData(context)
+                    loading = false
+                    val message = when (result) {
+                        SyncResult.Success -> "Les données ont été mises à jour."
+                        is SyncResult.Error -> result.message
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                }
+            }
+        )
+    }
+    if (loading) {
+        LoadingDialog(message = "Actualisation des données...")
+    }
 }
 
 @Composable

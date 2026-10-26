@@ -3,6 +3,7 @@ package com.partners.hdfils_agent.data.shared
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -27,9 +28,18 @@ class StoreData(private val context: Context) {
         val CLIENT = stringPreferencesKey("client_auth__")
         val CLIENT_ = stringPreferencesKey("client__")
         val AGENT = stringPreferencesKey("agent_auth__")
-
-
+        val LOGGED_IN = booleanPreferencesKey("logged_in__")
     }
+
+    val isLoggedIn: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            val flag = preferences[LOGGED_IN]
+            val hasAgent = !preferences[AGENT].isNullOrBlank() && preferences[AGENT] != "null"
+            when (flag) {
+                null -> hasAgent
+                else -> flag && hasAgent
+            }
+        }
 
     val getData: Flow<String?> = context.dataStore.data
         .map { preferences ->
@@ -50,11 +60,16 @@ class StoreData(private val context: Context) {
             val jsonString = preferences[TRASH] ?: ""
             gson.fromJson(jsonString, TrashClean::class.java)
         }
-    val getDataAgentAuth: Flow<Agent> = context.dataStore.data
+    val getDataAgentAuth: Flow<Agent?> = context.dataStore.data
         .map { preferences ->
-            val jsonString = preferences[AGENT] ?: ""
-            gson.fromJson(jsonString, Agent::class.java)
-        }
+            val jsonString = preferences[AGENT]?.takeIf { it.isNotBlank() && it != "null" }
+                ?: return@map null
+            try {
+                gson.fromJson(jsonString, Agent::class.java)
+            } catch (e: Exception) {
+                null
+            }
+        }.flowOn(Dispatchers.IO)
 
     val getDataClientTrash: Flow<List<TrashClean>> = context.dataStore.data
         .map { preferences ->
@@ -79,11 +94,27 @@ class StoreData(private val context: Context) {
         } else {
             try {
                 gson.fromJson(jsonString, Array<Client>::class.java).toList()
-            } catch (e: JsonSyntaxException) {
+            } catch (e: Exception) {
                 emptyList()
             }
         }
     }.flowOn(Dispatchers.IO)
+
+    suspend fun setLoggedIn(loggedIn: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[LOGGED_IN] = loggedIn
+        }
+    }
+
+    suspend fun clearSession() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(AGENT)
+            preferences.remove(CLIENT_)
+            preferences.remove(TRASH)
+            preferences.remove(USERNAME)
+            preferences[LOGGED_IN] = false
+        }
+    }
 
     suspend fun saveDataClientTrash(trash: List<TrashClean>) {
         context.dataStore.edit { preferences ->

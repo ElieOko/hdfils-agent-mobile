@@ -1,9 +1,7 @@
 package com.partners.hdfils_agent.presentation.ui.pages
 
 import android.annotation.SuppressLint
-import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,18 +12,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -59,29 +53,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.partners.hdfils_agent.R
-import com.partners.hdfils_agent.data.shared.StoreData
-import com.partners.hdfils_agent.data.utils.EndPoint
 import com.partners.hdfils_agent.data.utils.EndPoint.trashAction
 import com.partners.hdfils_agent.domain.models.Trash
 import com.partners.hdfils_agent.domain.models.TrashClean
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
-import com.partners.hdfils_agent.domain.remote.ResponseAPIClient
-import com.partners.hdfils_agent.domain.remote.ResponseAPIGeneric
 import com.partners.hdfils_agent.domain.remote.ResponseAPIGenericClean
-import com.partners.hdfils_agent.domain.remote.ResponseAPIGenirc
 import com.partners.hdfils_agent.presentation.ui.components.Label
 import com.partners.hdfils_agent.presentation.ui.components.MAlertDialog
 import com.partners.hdfils_agent.presentation.ui.components.MButtonIcon
 import com.partners.hdfils_agent.presentation.ui.components.MCard
 import com.partners.hdfils_agent.presentation.ui.components.Space
 import com.partners.hdfils_agent.presentation.ui.components.TopBar
+import com.partners.hdfils_agent.presentation.ui.components.rememberTrashList
 import io.ktor.client.call.body
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 @Preview
 fun CheckBopeto(isConnected: Boolean = false) {
@@ -92,7 +82,7 @@ fun CheckBopeto(isConnected: Boolean = false) {
     val sheetState = rememberModalBottomSheetState()
     var onclick : ()-> Unit = {isShow = false}
     val context = LocalContext.current
-    val listTrash = remember { mutableStateListOf<TrashClean>() }
+    val listTrash = rememberTrashList()
     val listTrashDetail = remember { mutableStateListOf<TrashClean>(TrashClean(
         id = null,
         client_id =null,
@@ -107,95 +97,8 @@ fun CheckBopeto(isConnected: Boolean = false) {
     val scaffoldState = rememberBottomSheetScaffoldState()
     val  scope = rememberCoroutineScope()
 
-    Column(Modifier.background(Color(0xFFF4F4F8))) {
-        scope.launch {
-            StoreData(context).getDataClientTrash.collect{
-                if(it.isNotEmpty()){
-                    it.map { i->
-                        listTrash.add(i)
-                    }
-                }
-            }
-        }
-        TopBar(
-            onclick = {
-                try {
-                    if(isConnected){
-                        scope.launch {
-                            val response = ClientKtor().getData(EndPoint.clientAction)
-                            val status = response.status.value
-                            when(status){
-                                in 200..299 ->{
-                                    val res = response.body<ResponseAPIClient>()
-                                    Toast.makeText(context,"Mises à jours", Toast.LENGTH_LONG).show()
-                                    Log.i("",
-                                        res.toString()
-                                    )
-                                    scope.launch {
-                                        StoreData(context).saveDataClient(res.clients)
-                                    }
-//                                    trashCleaner.add(TrashClean(
-//                                        id = res.data.id,
-//                                        state_trash_id = res.data.state_trash_id,
-//                                        created_at = res.data.created_at,
-//                                        client_id = res.data.client_id))
-//                                    scope.launch {
-//                                        StoreData(context).saveDataTrash(trashCleaner[0])
-//                                    }
-                                }
-                                in 500..599 ->{
-                                    Toast.makeText(context,"Erreur serveur", Toast.LENGTH_LONG).show()
-                                }
-                                in 400..499 ->{
-                                    val res = response.body<ResponseAPI>()
-                                    Toast.makeText(context,res.message, Toast.LENGTH_LONG).show()
-                                }
-
-                            }
-                        }
-                        scope.launch {
-                            val response = ClientKtor().getData(EndPoint.trashAction)
-                            val status = response.status.value
-                            when(status){
-                                in 200..299 ->{
-                                    val res = response.body<ResponseAPIGeneric>()
-                                    Toast.makeText(context,"Mises à jours", Toast.LENGTH_LONG).show()
-                                    Log.i("",
-                                        res.toString()
-                                    )
-                                    scope.launch {
-                                        StoreData(context).saveDataTrash(res.trash_clients)
-                                    }
-//                                    trashCleaner.add(TrashClean(
-//                                        id = res.data.id,
-//                                        state_trash_id = res.data.state_trash_id,
-//                                        created_at = res.data.created_at,
-//                                        client_id = res.data.client_id))
-//                                    scope.launch {
-//                                        StoreData(context).saveDataTrash(trashCleaner[0])
-//                                    }
-                                }
-                                in 500..599 ->{
-                                    Toast.makeText(context,"Erreur serveur", Toast.LENGTH_LONG).show()
-                                }
-                                in 400..499 ->{
-                                    val res = response.body<ResponseAPI>()
-                                    Toast.makeText(context,res.message, Toast.LENGTH_LONG).show()
-                                }
-
-                            }
-                        }
-                    }
-                    else{
-                        Toast.makeText(context,"Vous n'êtes pas connecté veuillez vérifier votre connexion !!!",
-                            Toast.LENGTH_LONG).show()
-                    }
-                }
-                catch (e : Exception){
-                    Toast.makeText(context,e.message, Toast.LENGTH_LONG).show()
-                }
-            }
-        )
+    Column(Modifier.background(Color(0xFFF4F4F8)).statusBarsPadding()) {
+        TopBar(isConnected = isConnected)
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
             sheetContainerColor =  Color(0xFF8181E8),
@@ -289,6 +192,13 @@ fun CheckBopeto(isConnected: Boolean = false) {
         ) {
             Space(y=25)
             Column(Modifier.verticalScroll(rememberScrollState()).background(Color(0xFFF4F4F8))) {
+                if (listTrash.isEmpty()) {
+                    Text(
+                        text = "Aucune poubelle pour le moment. Actualisez pour charger les données.",
+                        color = Color(0xFF123049),
+                        modifier = Modifier.padding(24.dp)
+                    )
+                }
                 listTrash.map {
                     MCard(
                         items = it,

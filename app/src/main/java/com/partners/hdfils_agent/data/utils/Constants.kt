@@ -5,7 +5,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.ui.res.painterResource
-import com.google.android.gms.common.util.CollectionUtils.listOf
 import com.partners.hdfils_agent.domain.models.Route
 import com.partners.hdfils_agent.R
 import com.partners.hdfils_agent.domain.models.Commune
@@ -28,5 +27,13 @@ class Constants {
         val listGenre = listOf("Mr(M)", "Mme(F)")
         val listVille = listOf("Kinshasa", "Boma", "Matadi")
         val listCommune = Commune().communeList()
+        val listTranche = listOf(
+            "Tranche 1",
+            "Tranche 2",
+            "Tranche 3",
+            "Tranche 4",
+            "Tranche 6",
+            "Tranche 12"
+        )
     }
 }
