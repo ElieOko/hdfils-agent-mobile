@@ -33,3 +33,14 @@ data class Commune(
         )
     }
 }
+
+fun communeLabel(id: Int?): String {
+    if (id == null || id == 0) return "—"
+    return Commune().communeList().firstOrNull { it.id == id }?.nom ?: "Commune $id"
+}
+
+fun cityLabel(cityId: Int?): String = when (cityId) {
+    null, 0 -> "—"
+    1 -> "Kinshasa"
+    else -> "Ville $cityId"
+}

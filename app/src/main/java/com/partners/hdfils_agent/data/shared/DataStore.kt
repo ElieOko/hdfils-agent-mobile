@@ -9,8 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.partners.hdfils_agent.domain.models.Agent
-import com.partners.hdfils_agent.domain.models.AgentAuth
-import com.partners.hdfils_agent.domain.models.Client
+import com.partners.hdfils_agent.domain.models.ClientS
 import com.partners.hdfils_agent.domain.models.TrashClean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -50,10 +49,14 @@ class StoreData(private val context: Context) {
             val jsonString = preferences[TRASH] ?: ""
             gson.fromJson(jsonString, TrashClean::class.java)
         }
-    val getDataAgentAuth: Flow<Agent> = context.dataStore.data
+    val getDataAgentAuth: Flow<Agent?> = context.dataStore.data
         .map { preferences ->
-            val jsonString = preferences[AGENT] ?: ""
-            gson.fromJson(jsonString, Agent::class.java)
+            val jsonString = preferences[AGENT]?.takeIf { it.isNotBlank() } ?: return@map null
+            try {
+                gson.fromJson(jsonString, Agent::class.java)
+            } catch (e: JsonSyntaxException) {
+                null
+            }
         }
 
     val getDataClientTrash: Flow<List<TrashClean>> = context.dataStore.data
@@ -71,14 +74,14 @@ class StoreData(private val context: Context) {
         }.flowOn(Dispatchers.IO)
 
 
-    val getDataClient: Flow<List<Client?>> = context.dataStore.data
+    val getDataClient: Flow<List<ClientS>> = context.dataStore.data
         .map { preferences ->
         val jsonString = preferences[CLIENT_]?.takeIf { it.isNotEmpty() } ?: ""
         if (jsonString.isEmpty()) {
             emptyList()
         } else {
             try {
-                gson.fromJson(jsonString, Array<Client>::class.java).toList()
+                gson.fromJson(jsonString, Array<ClientS>::class.java)?.toList().orEmpty()
             } catch (e: JsonSyntaxException) {
                 emptyList()
             }
@@ -91,10 +94,16 @@ class StoreData(private val context: Context) {
             preferences[TRASH] = jsonString
         }
     }
-    suspend fun saveDataClient(client: List<Client>) {
+    suspend fun saveDataClient(client: List<ClientS>) {
         context.dataStore.edit { preferences ->
             val jsonString = gson.toJson(client)
             preferences[CLIENT_] = jsonString
+        }
+    }
+
+    suspend fun clearSession() {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
         }
     }
 

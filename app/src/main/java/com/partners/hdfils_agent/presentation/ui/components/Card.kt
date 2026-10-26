@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,12 +66,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.partners.hdfils_agent.domain.models.Client
 import kotlin.io.path.Path
 import androidx.core.graphics.toColorInt
 import com.partners.hdfils_agent.R
-import com.partners.hdfils_agent.data.shared.StoreData
 import com.partners.hdfils_agent.domain.models.TrashClean
+import com.partners.hdfils_agent.domain.models.communeLabel
+import com.partners.hdfils_agent.presentation.ui.theme.BrandBlue
+import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueDark
+import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueLight
+import com.partners.hdfils_agent.presentation.ui.theme.Danger
+import com.partners.hdfils_agent.presentation.ui.theme.Ink
+import com.partners.hdfils_agent.presentation.ui.theme.InkMuted
+import com.partners.hdfils_agent.presentation.ui.theme.Success
+import com.partners.hdfils_agent.presentation.ui.theme.Warning
 import kotlinx.coroutines.launch
 
 
@@ -187,125 +195,58 @@ fun ElegantCard() {
     }
 }
 
-@SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 @Preview
 fun ClientStatsCardWithChart(
-    accountClientSize : Double = 0.0
+    clientCount: Int = 0,
+    totals: List<Pair<String, Int>> = emptyList(),
 ) {
-
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val clients = remember { mutableStateListOf<Client>() }
-    val sizeClient = remember { mutableIntStateOf(value = 0) }
-    try {
-        scope.launch {
-            StoreData(context).getDataClient.collect{
-                if(it.isNotEmpty()){
-                    it.forEach { i->
-                        if(i != null){
-                            clients.add(i)
-                            sizeClient.intValue = clients.size
-                            Toast.makeText(context,"$it",Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }
-        }
-    }
-    catch (e:Exception){
-        e.message?.let {
-            Log.e("ERROR************************************",
-                it,)
-        }
-    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
-            .padding(8.dp),
-        shape = RoundedCornerShape(16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-
-            // Fond avec graphique minimal
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val width = size.width
-                val height = size.height
-
-                // Dégradé de fond
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Blue.copy(alpha = 0.1f),
-                            Color.Blue.copy(alpha = 0.05f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(listOf(BrandBlue, BrandBlueDark)),
+                    RoundedCornerShape(22.dp)
+                )
+                .padding(20.dp)
+        ) {
+            Column {
+                Text(
+                    text = "CLIENTS SUIVIS",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 12.sp,
+                    letterSpacing = 1.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "$clientCount",
+                    color = Color.White,
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                if (totals.isEmpty()) {
+                    Text(
+                        text = "Aucune souscription enregistrée",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 13.sp
+                    )
+                } else {
+                    totals.forEach { (devise, amount) ->
+                        Text(
+                            text = "Souscriptions · ${formatMoney(amount, devise)}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
                         )
-                    ),
-                    size = size
-                )
-
-                // Ligne de graphique
-                val points = listOf(
-                    Offset(0.1f * width, 0.7f * height),
-                    Offset(0.3f * width, 0.5f * height),
-                    Offset(0.5f * width, 0.6f * height),
-                    Offset(0.7f * width, 0.3f * height),
-                    Offset(0.9f * width, 0.5f * height)
-                )
-
-                drawPath(
-                    path = Path().apply {
-                        moveTo(points.first().x, points.first().y)
-                        points.drop(1).forEach { point ->
-                            lineTo(point.x, point.y)
-                        }
-                    } as Path,
-                    color = Color.Blue.copy(alpha = 0.3f),
-                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-                )
-            }
-            // Contenu
-            Row(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "Total Clients",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "${sizeClient.intValue}",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "%",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
+                    }
                 }
             }
         }
@@ -314,74 +255,112 @@ fun ClientStatsCardWithChart(
 
 @Composable
 fun MCard(
-    items : TrashClean,
-    onClick : ()-> Unit = {},
-    onclickClean : ()-> Unit = {}
-){
-    var titleTrash = "Poubelle propre"
-    var colorTrash = Color.Green.copy(alpha = 0.5F)
-    var iconState = R.drawable.check
-    when(items.state_trash_id){
+    items: TrashClean,
+    onClick: () -> Unit = {},
+    onclickClean: () -> Unit = {}
+) {
+    val titleTrash: String
+    val colorTrash: Color
+    val iconState: Int
+    when (items.state_trash_id) {
         3 -> {
             titleTrash = "Poubelle pleine"
             iconState = R.drawable.run
-            colorTrash  =  Color.Red.copy(alpha = 0.7F)
+            colorTrash = Danger
         }
         2 -> {
-            titleTrash = "Nettoyage poubelle"
+            titleTrash = "Nettoyage en cours"
             iconState = R.drawable.transfert
-            colorTrash = Color.Blue.copy(
-                alpha = 0.7F,
-            )
+            colorTrash = Warning
         }
-        1 ->{
+        else -> {
             titleTrash = "Poubelle propre"
             iconState = R.drawable.check
+            colorTrash = Success
         }
     }
+    val client = items.client
+    val address = client?.address_client?.firstOrNull()
+    val place = listOfNotNull(
+        address?.avenue?.takeIf { it.isNotBlank() },
+        address?.numero_parcelle?.takeIf { it.isNotBlank() }?.let { "n° $it" },
+        address?.quartier?.takeIf { it.isNotBlank() },
+        communeLabel(address?.commune_id).takeIf { it != "—" }
+    ).joinToString(" · ")
     Card(
-        Modifier.padding(10.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Blue.copy(0.1f))
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(5.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painterResource(iconState),
-                contentDescription = "",
-                modifier = Modifier.size(30.dp),
-                tint = colorTrash
+            Box(
+                Modifier
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .background(colorTrash)
             )
-            Spacer(Modifier.width(10.dp))
-            Column() {
-                Label(titleTrash, fontWeight = FontWeight.Bold, color = Color.Black)
-                Label("Client : ${items.client?.nom} ${items.client?.prenom}", fontWeight = FontWeight.Bold, color = Color.Black)
-            }
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Absolute.Right
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        onClick()
-                    }
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        painterResource(R.drawable.detail),
+                        painterResource(iconState),
                         contentDescription = null,
-                        tint = Color.Blue.copy(0.7f),
-                        modifier = Modifier.size(30.dp)
+                        modifier = Modifier.size(18.dp),
+                        tint = colorTrash
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(titleTrash, color = colorTrash, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+                Text(
+                    text = listOfNotNull(client?.prenom, client?.nom).filter { it.isNotBlank() }.joinToString(" ").ifBlank { "Client" },
+                    color = Ink,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                if (!client?.code.isNullOrBlank()) {
+                    Text(client?.code.orEmpty(), color = BrandBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+                if (place.isNotBlank()) {
+                    Text(place, color = InkMuted, fontSize = 12.sp)
+                }
+                if ((client?.montant_souscription ?: 0) > 0) {
+                    val label = client?.tranche?.takeIf { it.isNotBlank() }
+                        ?: "${client?.nombre_tranches ?: 0} tranches"
+                    Text(
+                        text = "${formatMoney(client?.montant_souscription ?: 0, client?.devise.orEmpty())} · $label",
+                        color = BrandBlueDark,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
-                IconButton(
-                    onClick = onclickClean
-                ) {
+            }
+            Column {
+                IconButton(onClick = onClick) {
+                    Icon(
+                        painterResource(R.drawable.detail),
+                        contentDescription = "Détails",
+                        tint = BrandBlue,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+                IconButton(onClick = onclickClean) {
                     Icon(
                         painterResource(R.drawable.trash_clean),
-                        modifier = Modifier.size(23.dp),
-                        tint = Color.Red.copy(0.7f),
-                        contentDescription = null
+                        modifier = Modifier.size(22.dp),
+                        tint = colorTrash,
+                        contentDescription = "Mettre à jour"
                     )
                 }
             }
@@ -390,108 +369,81 @@ fun MCard(
 }
 @Composable
 @Preview
-fun WasteCollectionStatsCard() {
+fun WasteCollectionStatsCard(
+    pleine: Int = 0,
+    enCours: Int = 0,
+    propre: Int = 0,
+) {
+    val total = (pleine + enCours + propre).coerceAtLeast(1)
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(6.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            // En-tête avec icône
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .background(
-                            color = Color(0xFF388E3C).copy(alpha = 0.2f),
-                            shape = CircleShape
-                        ),
+                        .size(42.dp)
+                        .background(BrandBlueLight, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Delete,
-                        contentDescription = "Poubelle",
-                        tint = Color(0xFF388E3C),
-                        modifier = Modifier.size(24.dp)
+                        contentDescription = null,
+                        tint = BrandBlue,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
-
                 Column {
                     Text(
-                        text = "STATISTIQUES DE VIDAGE",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        letterSpacing = 1.sp
+                        text = "POUBELLES",
+                        color = InkMuted,
+                        fontSize = 11.sp,
+                        letterSpacing = 1.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = "Collecte des Déchets",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        text = "État des vidages",
+                        color = Ink,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Statistiques principales
+            Spacer(modifier = Modifier.height(18.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(
-                    value = "48",
-                    label = "Vidages\ncette semaine",
-                    icon = Icons.Outlined.Home,
-                    color = Color(0xFF2196F3)
-                )
-
-                StatItem(
-                    value = "92%",
-                    label = "Taux de\nréussite",
-                    icon = Icons.Outlined.CheckCircle,
-                    color = Color(0xFF4CAF50)
-                )
-
-                StatItem(
-                    value = "3",
-                    label = "Retards",
-                    icon = Icons.Outlined.AccountBox,
-                    color = Color(0xFFFF9800)
-                )
+                StatItem(value = "$pleine", label = "Pleines", icon = Icons.Outlined.Delete, color = Danger)
+                StatItem(value = "$enCours", label = "En cours", icon = Icons.Outlined.AccountBox, color = Warning)
+                StatItem(value = "$propre", label = "Propres", icon = Icons.Outlined.CheckCircle, color = Success)
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Graphique de fréquence
-            Text(
-                text = "Fréquence Hebdomadaire",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Space(y = 34)
-            WeeklyCollectionChart()
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Légende
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                LegendItem(color = Color(0xFF4CAF50), text = "Terminé")
-                LegendItem(color = Color(0xFFFF9800), text = "Retard")
-                LegendItem(color = Color(0xFFF44336), text = "Manqué")
+            if (pleine + enCours + propre == 0) {
+                Text(
+                    text = "Les poubelles apparaîtront ici après la connexion.",
+                    color = InkMuted,
+                    fontSize = 13.sp
+                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                ) {
+                    if (propre > 0) Box(Modifier.weight(propre / total.toFloat()).fillMaxHeight().background(Success))
+                    if (enCours > 0) Box(Modifier.weight(enCours / total.toFloat()).fillMaxHeight().background(Warning))
+                    if (pleine > 0) Box(Modifier.weight(pleine / total.toFloat()).fillMaxHeight().background(Danger))
+                }
             }
         }
     }

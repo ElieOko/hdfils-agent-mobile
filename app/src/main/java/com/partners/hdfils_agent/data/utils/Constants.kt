@@ -18,7 +18,7 @@ class Constants {
         const val IS_PROD = true
         const val TokenLocal = ""
         val routeList = listOf(
-            Route(R.drawable.home, title = "Acceuil", routeName = ScreenRoute.Home.name),
+            Route(R.drawable.home, title = "Accueil", routeName = ScreenRoute.Home.name),
             Route(R.drawable.user_people, title = "Client", routeName = ScreenRoute.Client.name, position = 1),
             Route(R.drawable.trash_clean, title = "Vidage", routeName = ScreenRoute.Cleaner.name, position = 2),
             Route(R.drawable.user_, title = "Profil", routeName = ScreenRoute.Profil.name, position = 3)
