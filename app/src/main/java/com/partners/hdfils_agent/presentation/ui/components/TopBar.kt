@@ -43,10 +43,10 @@ fun TopBar(
     val rainbowColorsBrush = remember {
         Brush.sweepGradient(
             listOf(
-                Color(0xFF9575CD),
-                Color(0xFF377946),
-                Color(0xFF2B4B4F),
-                Color(0xFF9575CD)
+                Color(0xFF307EC7),
+                Color(0xFF1B5C96),
+                Color(0xFF8ECAFF),
+                Color(0xFF307EC7)
             )
         )
     }
@@ -57,7 +57,7 @@ fun TopBar(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(R.drawable.logo_gris),
+                painter = painterResource(R.drawable.logo_casa),
                 contentScale = ContentScale.Crop,
                 contentDescription = "",
                 modifier = Modifier
@@ -118,7 +118,7 @@ fun SimpleTopBar(
             navigationIcon = {
                 IconButton(onClick = { clickStartAction() }) {
                     Image(
-                        painter = painterResource(R.drawable.luffy),
+                        painter = painterResource(R.drawable.logo_casa),
                         contentDescription = "",
                         modifier = Modifier
                             .size(180.dp)
