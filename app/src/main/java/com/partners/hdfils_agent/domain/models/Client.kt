@@ -14,6 +14,8 @@ data class Client(
     val montant_souscription: Int = 0,
     val devise: String = "",
     val nombre_tranches: Int = 0,
+    val tranche: String = "",
+    val commentaire: String = "",
 )
 
 @Serializable

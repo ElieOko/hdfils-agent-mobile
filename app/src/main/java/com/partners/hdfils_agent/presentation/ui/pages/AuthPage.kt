@@ -2,31 +2,27 @@ package com.partners.hdfils_agent.presentation.ui.pages
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,210 +31,176 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Text
 import androidx.navigation.NavHostController
-import com.partners.hdfils_agent.presentation.ui.components.Space
-import com.partners.hdfils_agent.presentation.ui.theme.AnimatedBackgroundShapes
-import io.ktor.client.call.body
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import com.partners.hdfils_agent.R
 import com.partners.hdfils_agent.data.shared.StoreData
+import com.partners.hdfils_agent.data.utils.AgentCodeValidator
 import com.partners.hdfils_agent.data.utils.EndPoint.agentAuth
-import com.partners.hdfils_agent.domain.models.Agent
 import com.partners.hdfils_agent.domain.models.AgentAuth
-import com.partners.hdfils_agent.domain.models.TrashClean
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
 import com.partners.hdfils_agent.domain.remote.ResponseAPIGenirc
 import com.partners.hdfils_agent.domain.route.ScreenRoute
+import com.partners.hdfils_agent.presentation.ui.components.AppField
+import com.partners.hdfils_agent.presentation.ui.components.AppLogo
+import com.partners.hdfils_agent.presentation.ui.components.PrimaryButton
+import com.partners.hdfils_agent.presentation.ui.theme.AppBackground
+import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueDeep
+import com.partners.hdfils_agent.presentation.ui.theme.InkMuted
+import io.ktor.client.call.body
+import kotlinx.coroutines.launch
 
 @Composable
-
 fun AuthPage(navC: NavHostController, isConnected: Boolean) {
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     var matricule by remember { mutableStateOf("") }
-    var isAnimating by remember { mutableStateOf(false) }
+    var codeError by remember { mutableStateOf<String?>(null) }
+    var hasTried by remember { mutableStateOf(false) }
     var isActive by remember { mutableStateOf(true) }
-    val ctx = LocalContext.current
+
+    fun submit() {
+        hasTried = true
+        val error = AgentCodeValidator.errorOrNull(matricule)
+        codeError = error
+        if (error != null) return
+        if (!isConnected) {
+            Toast.makeText(
+                context,
+                "Vous n'êtes pas connecté. Vérifiez votre connexion.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        if (!isActive) return
+        isActive = false
+        focusManager.clearFocus()
+        scope.launch {
+            try {
+                val response = ClientKtor().postData(agentAuth, AgentAuth(matricule.trim()))
+                when (val status = response.status.value) {
+                    in 200..299 -> {
+                        val res = response.body<ResponseAPIGenirc>()
+                        val store = StoreData(context)
+                        store.saveDataAgentAuth(res.agent)
+                        if (res.trash_client.isNotEmpty()) {
+                            store.saveDataClientTrash(res.trash_client)
+                        }
+                        if (res.client.isNotEmpty()) {
+                            store.saveDataClient(res.client)
+                        }
+                        store.setLoggedIn(true)
+                        Toast.makeText(context, res.message, Toast.LENGTH_LONG).show()
+                        navC.navigate(ScreenRoute.Home.name) {
+                            popUpTo(navC.graph.id) { inclusive = true }
+                        }
+                    }
+                    in 500..599 -> {
+                        Toast.makeText(context, "Erreur serveur", Toast.LENGTH_LONG).show()
+                    }
+                    in 400..499 -> {
+                        val res = response.body<ResponseAPI>()
+                        codeError = res.message
+                        Toast.makeText(context, res.message, Toast.LENGTH_LONG).show()
+                    }
+                    else -> {
+                        Toast.makeText(context, "Réponse inattendue ($status)", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (error: Exception) {
+                Log.e("AUTH", error.message ?: "auth")
+                Toast.makeText(
+                    context,
+                    "Connexion impossible. Vérifiez le code ou le réseau.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
+                isActive = true
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(AppBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
     ) {
-        // Ajouter les formes en arrière-plan
-        AnimatedBackgroundShapes()
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-            ,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Card(
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF3E4EBD)
-                )
+                    .heightIn(min = maxHeight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Space(y=5)
-                    Image(
-                        painterResource(R.drawable.affiche),
-                        contentDescription = "",
-                        modifier = Modifier
-                            .size(90.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop)
-                    Space(y=10)
-                    Text(
-                        text = "Connexion",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Agent sur terrain pour la salubrite",
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    OutlinedTextField(
-                        value = matricule,
-                        onValueChange = { matricule = it },
-                        label = { Text("Code Agent") },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.house),
-                                contentDescription = null,
-                                modifier = Modifier.size(25.dp),
-                                tint = Color.White
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color.White,
-                            focusedLabelColor = Color.White,
-                            unfocusedLabelColor = Color.White,
-                            cursorColor = Color.White,
-                            focusedLeadingIconColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White
-                        ),
-                        textStyle = TextStyle(color = Color.White),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    Space(y=20)
-                    Button(
-                        onClick = {
-                            try {
-                                if(isConnected){
-                                    coroutineScope.launch {
-                                        isActive = false
-                                        delay(6000)
-                                        val response = ClientKtor().postData(agentAuth,AgentAuth(matricule))
-                                        val status = response.status.value
-                                        when(status){
-                                            in 200..299 ->{
-                                                isActive = true
-                                                val res = response.body<ResponseAPIGenirc>()
-                                                Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
-                                                scope.launch {
-                                                    StoreData(context).saveDataAgentAuth(
-                                                        Agent(
-                                                            code = res.agent.code,
-                                                            nom = res.agent.nom,
-                                                            postnom = res.agent.postnom,
-                                                            prenom = res.agent.prenom,
-                                                            genre = res.agent.genre,
-                                                            telephone = res.agent.telephone,
-                                                            address = res.agent.address)
-                                                    )
-                                                }
-                                                if(res.trash_client.isNotEmpty()){
-                                                    scope.launch {
-                                                        val x = res.trash_client.toList()
-                                                        StoreData(context).saveDataClientTrash(x)
-                                                    }
-                                                }
-
-                                                if (res.client.isNotEmpty()){
-                                                    scope.launch {
-                                                        StoreData(context).saveDataClient(res.client)
-                                                    }
-                                                }
-                                                navC.navigate(route = ScreenRoute.Home.name){
-                                                    popUpTo(navC.graph.id){
-                                                        inclusive = true
-                                                    }
-                                                }
-                                            }
-                                            in 500..599 ->{
-                                                isActive = true
-                                                Toast.makeText(context,"Erreur serveur",Toast.LENGTH_LONG).show()
-                                            }
-                                            in 400..499 ->{
-                                                isActive = true
-                                                val res = response.body<ResponseAPI>()
-                                                Toast.makeText(context,res.message,Toast.LENGTH_LONG).show()
-                                            }
-
-                                        }
-                                    }
-                                }
-                                else{
-                                    Toast.makeText(ctx,"Vous n'êtes pas connecté veuillez vérifier votre connexion !!!",Toast.LENGTH_LONG).show()
-                                }
-                            }
-                            catch (e:Exception){
-                                e.message?.let {
-                                    Log.e("ERROR************************************",
-                                        it,)
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor =  Color.Black,
-                            disabledContentColor = Color(0xFF080624),
-                            disabledContainerColor = Color(0xFF080624)
-                        ),
-                        enabled = isActive,
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(text = if(isActive) "Se connecter" else "Chargement...", fontSize = 16.sp, color = Color.White)
-                    }
-                    Space(y=30)
-                }
-            }
-        }
-        Column(modifier = Modifier.fillMaxHeight(), verticalArrangement = Arrangement.Top) {
-            if(!isActive){
-                LinearProgressIndicator(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color.White,
-                    trackColor =Color(0xFF070524),
-                )
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        AppLogo(size = 92.dp)
+                        Spacer(Modifier.height(14.dp))
+                        Text(
+                            text = "CasaSalubrite",
+                            color = BrandBlueDeep,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 28.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "Connexion agent",
+                            color = InkMuted,
+                            fontSize = 15.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                        Text(
+                            text = "Saisissez votre code agent. La session reste ouverte sur cet appareil.",
+                            color = InkMuted,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 18.dp)
+                        )
+                        AppField(
+                            value = matricule,
+                            onValueChange = {
+                                matricule = it
+                                if (hasTried) codeError = AgentCodeValidator.errorOrNull(it)
+                            },
+                            label = "Code agent",
+                            icon = Icons.Default.Lock,
+                            isError = codeError != null,
+                            supportingText = codeError,
+                            imeAction = ImeAction.Done,
+                            onImeAction = { submit() }
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        PrimaryButton(
+                            text = "Se connecter",
+                            onClick = { submit() },
+                            loading = !isActive
+                        )
+                    }
+                }
+                Spacer(Modifier.height(96.dp))
             }
         }
     }

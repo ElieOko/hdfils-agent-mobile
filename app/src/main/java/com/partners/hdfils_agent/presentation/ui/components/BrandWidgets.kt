@@ -51,7 +51,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +65,7 @@ import com.partners.hdfils_agent.presentation.ui.theme.BrandBlue
 import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueDark
 import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueDeep
 import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueLight
+import com.partners.hdfils_agent.presentation.ui.theme.Danger
 import com.partners.hdfils_agent.presentation.ui.theme.Ink
 import com.partners.hdfils_agent.presentation.ui.theme.InkMuted
 import com.partners.hdfils_agent.presentation.ui.theme.Line
@@ -147,6 +150,11 @@ fun brandFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedTextColor = Ink,
     focusedContainerColor = Color.White,
     unfocusedContainerColor = Color.White,
+    errorBorderColor = Danger,
+    errorLabelColor = Danger,
+    errorCursorColor = Danger,
+    errorSupportingTextColor = Danger,
+    errorLeadingIconColor = Danger,
 )
 
 @Composable
@@ -157,6 +165,12 @@ fun AppField(
     icon: ImageVector,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
+    singleLine: Boolean = true,
+    minLines: Int = 1,
+    isError: Boolean = false,
+    supportingText: String? = null,
+    imeAction: ImeAction = ImeAction.Next,
+    onImeAction: (() -> Unit)? = null,
 ) {
     OutlinedTextField(
         value = value,
@@ -165,12 +179,73 @@ fun AppField(
         leadingIcon = {
             Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
         },
-        modifier = modifier.fillMaxWidth(),
-        singleLine = true,
+        modifier = modifier
+            .fillMaxWidth()
+            .focusBringIntoView(),
+        singleLine = singleLine,
+        minLines = if (singleLine) 1 else minLines,
+        isError = isError,
+        supportingText = supportingText?.let { message -> { Text(message) } },
         shape = RoundedCornerShape(14.dp),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+        keyboardActions = KeyboardActions(
+            onDone = { onImeAction?.invoke() },
+            onNext = { onImeAction?.invoke() },
+            onGo = { onImeAction?.invoke() }
+        ),
         colors = brandFieldColors(),
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TrancheSelect(
+    selected: String,
+    onSelect: (String) -> Unit,
+    options: List<String>,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Tranche") },
+            placeholder = { Text("Sélectionnez une tranche") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = brandFieldColors(),
+            textStyle = androidx.compose.ui.text.TextStyle(color = Ink),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                .focusBringIntoView()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            option,
+                            color = Ink,
+                            fontWeight = if (option == selected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    onClick = {
+                        onSelect(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -321,6 +396,7 @@ fun SearchableCommuneField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(MenuAnchorType.PrimaryEditable)
+                    .focusBringIntoView()
             )
             ExposedDropdownMenu(
                 expanded = expanded,

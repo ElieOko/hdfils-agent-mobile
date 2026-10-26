@@ -1,23 +1,28 @@
 package com.partners.hdfils_agent.presentation.ui.pages
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,32 +33,40 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.partners.hdfils_agent.R
-import com.partners.hdfils_agent.data.utils.Constants.Companion.listCommune
+import com.partners.hdfils_agent.data.shared.StoreData
+import com.partners.hdfils_agent.data.utils.Constants.Companion.listTranche
 import com.partners.hdfils_agent.data.utils.EndPoint.clientAction
 import com.partners.hdfils_agent.domain.models.Client
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
-import com.partners.hdfils_agent.presentation.ui.components.SelectableOutlinedTextField
-import com.partners.hdfils_agent.presentation.ui.components.Space
+import com.partners.hdfils_agent.presentation.ui.components.AppField
+import com.partners.hdfils_agent.presentation.ui.components.AppLogo
+import com.partners.hdfils_agent.presentation.ui.components.PrimaryButton
+import com.partners.hdfils_agent.presentation.ui.components.SearchableCommuneField
+import com.partners.hdfils_agent.presentation.ui.components.TrancheSelect
+import com.partners.hdfils_agent.presentation.ui.theme.AppBackground
+import com.partners.hdfils_agent.presentation.ui.theme.BrandBlueDeep
+import com.partners.hdfils_agent.presentation.ui.theme.Danger
+import com.partners.hdfils_agent.presentation.ui.theme.InkMuted
 import io.ktor.client.call.body
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
 fun InscriptionPage(isConnected: Boolean) {
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
     var isActive by remember { mutableStateOf(true) }
+    var resetKey by remember { mutableIntStateOf(0) }
     var communeId by remember { mutableIntStateOf(0) }
     var nom by remember { mutableStateOf("") }
     var prenom by remember { mutableStateOf("") }
@@ -61,252 +74,220 @@ fun InscriptionPage(isConnected: Boolean) {
     var avenue by remember { mutableStateOf("") }
     var quartier by remember { mutableStateOf("") }
     var numeroParcelle by remember { mutableStateOf("") }
-    var commune by remember { mutableStateOf("") }
+    var devise by remember { mutableStateOf("") }
+    var tranche by remember { mutableStateOf("") }
+    var commentaire by remember { mutableStateOf("") }
+    var formError by remember { mutableStateOf<String?>(null) }
     val ctx = LocalContext.current
-    Column(Modifier.verticalScroll(rememberScrollState())) {
-        Space(y=30)
+
+    fun validate(): String? = when {
+        communeId == 0 -> "Sélectionnez une commune"
+        nom.isBlank() -> "Le nom est obligatoire"
+        prenom.isBlank() -> "Le prénom est obligatoire"
+        telephone.isBlank() -> "Le téléphone est obligatoire"
+        devise.isBlank() -> "La devise est obligatoire"
+        tranche.isBlank() -> "Sélectionnez une tranche"
+        else -> null
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(AppBackground)
+            .statusBarsPadding()
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 28.dp)
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Blue.copy(alpha = 0.4f)
-            )
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
-            Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Space(y=2)
-                Image(
-                    painterResource(R.drawable.affiche),
-                    contentDescription = "",
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop)
-                Space(y=4)
+            Column(
+                Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AppLogo(size = 78.dp)
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "inscription Client",
-                    fontSize = 24.sp,
+                    text = "CasaNayo Team Salubrite",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = BrandBlueDeep,
+                    textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "",
+                    text = "Inscription client",
                     fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = InkMuted,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
                 )
-                Space(y = 6)
-
-                SelectableOutlinedTextField(
-                    title = "Commune",
-                    textValue2 = commune,
-                    itemList =listCommune,
-                    onChangeText = {
-                        Toast.makeText(ctx,"${it.id}",Toast.LENGTH_SHORT).show()
-                     communeId = it.id
-                    }
+                SearchableCommuneField(
+                    resetKey = resetKey,
+                    selectedId = communeId,
+                    onSelect = { communeId = it.id }
                 )
-                Space(y=5)
-                OutlinedTextField(
+                Spacer(Modifier.height(10.dp))
+                AppField(
                     value = nom,
                     onValueChange = { nom = it },
-                    label = { Text("Nom") },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.user_),
-                            contentDescription = null,
-                            modifier = Modifier.size(25.dp),
-                            tint = Color.White
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedLeadingIconColor = Color.White,
-                        unfocusedLeadingIconColor = Color.White
-                    ),
-                    textStyle = TextStyle(color = Color.White),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    label = "Nom",
+                    icon = Icons.Default.Person
                 )
-                Space(y=6)
-                OutlinedTextField(
+                Spacer(Modifier.height(8.dp))
+                AppField(
                     value = prenom,
                     onValueChange = { prenom = it },
-                    label = { Text("Prenom") },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.user_),
-                            contentDescription = null,
-                            modifier = Modifier.size(25.dp),
-                            tint = Color.White
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedLeadingIconColor = Color.White,
-                        unfocusedLeadingIconColor = Color.White
-                    ),
-                    textStyle = TextStyle(color = Color.White),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    label = "Prénom",
+                    icon = Icons.Default.Person
                 )
-                Space(y=6)
-                OutlinedTextField(
+                Spacer(Modifier.height(8.dp))
+                AppField(
                     value = telephone,
                     onValueChange = { telephone = it },
-                    label = { Text("Telephone") },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.user_),
-                            contentDescription = null,
-                            modifier = Modifier.size(25.dp),
-                            tint = Color.White
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedLeadingIconColor = Color.White,
-                        unfocusedLeadingIconColor = Color.White
-                    ),
-                    textStyle = TextStyle(color = Color.White),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    label = "Téléphone",
+                    icon = Icons.Default.Phone,
+                    keyboardType = KeyboardType.Phone
                 )
-                Space(y=6)
-                Row (Modifier.fillMaxWidth()){
-                    OutlinedTextField(
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    AppField(
                         value = avenue,
                         onValueChange = { avenue = it },
-                        label = { Text("Avenue") },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.user_),
-                                contentDescription = null,
-                                modifier = Modifier.size(25.dp),
-                                tint = Color.White
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color.White,
-                            focusedLabelColor = Color.White,
-                            unfocusedLabelColor = Color.White,
-                            cursorColor = Color.White,
-                            focusedLeadingIconColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White
-                        ),
-                        textStyle = TextStyle(color = Color.White),
-                        shape = RoundedCornerShape(10.dp)
+                        label = "Avenue",
+                        icon = Icons.Default.Place,
+                        modifier = Modifier.weight(1.4f)
                     )
-                    Space(x=6)
-                    OutlinedTextField(
+                    Spacer(Modifier.width(8.dp))
+                    AppField(
                         value = numeroParcelle,
                         onValueChange = { numeroParcelle = it },
-                        label = { Text("N") },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.White,
-                            unfocusedBorderColor = Color.White,
-                            focusedLabelColor = Color.White,
-                            unfocusedLabelColor = Color.White,
-                            cursorColor = Color.White,
-                            focusedLeadingIconColor = Color.White,
-                            unfocusedLeadingIconColor = Color.White
-                        ),
-                        textStyle = TextStyle(color = Color.White),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
+                        label = "N°",
+                        icon = Icons.Default.Home,
+                        modifier = Modifier.weight(0.8f)
                     )
                 }
-                Space(y=6)
-                OutlinedTextField(
+                Spacer(Modifier.height(8.dp))
+                AppField(
                     value = quartier,
                     onValueChange = { quartier = it },
-                    label = { Text("Quartier") },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(id = R.drawable.user_),
-                            contentDescription = null,
-                            modifier = Modifier.size(25.dp),
-                            tint = Color.White
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.White,
-                        focusedLabelColor = Color.White,
-                        unfocusedLabelColor = Color.White,
-                        cursorColor = Color.White,
-                        focusedLeadingIconColor = Color.White,
-                        unfocusedLeadingIconColor = Color.White
-                    ),
-                    textStyle = TextStyle(color = Color.White),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    label = "Quartier",
+                    icon = Icons.Default.Place
                 )
-                Space(y=14)
-                Button(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor =  Color.Black,
-                        disabledContentColor = Color(0xFF080624),
-                        disabledContainerColor = Color(0xFF080624)
-                    ),
-                    enabled = isActive,
-                    shape = RoundedCornerShape(10.dp),
+                Spacer(Modifier.height(8.dp))
+                AppField(
+                    value = devise,
+                    onValueChange = { devise = it.take(16) },
+                    label = "Devise (FC, USD…)",
+                    icon = Icons.Default.Info
+                )
+                Spacer(Modifier.height(8.dp))
+                TrancheSelect(
+                    selected = tranche,
+                    onSelect = { tranche = it },
+                    options = listTranche
+                )
+                Spacer(Modifier.height(8.dp))
+                AppField(
+                    value = commentaire,
+                    onValueChange = { commentaire = it },
+                    label = "Commentaire",
+                    icon = Icons.Default.Edit,
+                    singleLine = false,
+                    minLines = 3
+                )
+                if (formError != null) {
+                    Text(
+                        text = formError.orEmpty(),
+                        color = Danger,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
+                PrimaryButton(
+                    text = "Enregistrer",
+                    loading = !isActive,
                     onClick = {
-                        if(isConnected){
-                            coroutineScope.launch {
-                                isActive = false
-                                delay(6000)
-                                val response = ClientKtor().postData(clientAction, Client(nom=nom,numero_parcelle=numeroParcelle, prenom = prenom, telephone = telephone, avenue = avenue, commune_id = communeId , quartier = quartier))
-                                val status = response.status.value
-                                when(status){
-                                    in 200..299 ->{
-                                        isActive = true
+                        val error = validate()
+                        formError = error
+                        if (error != null) return@PrimaryButton
+                        if (!isConnected) {
+                            Toast.makeText(
+                                ctx,
+                                "Vous n'êtes pas connecté. Vérifiez votre connexion.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return@PrimaryButton
+                        }
+                        if (!isActive) return@PrimaryButton
+                        isActive = false
+                        focusManager.clearFocus()
+                        coroutineScope.launch {
+                            try {
+                                val created = Client(
+                                    nom = nom.trim(),
+                                    prenom = prenom.trim(),
+                                    telephone = telephone.trim(),
+                                    avenue = avenue.trim(),
+                                    quartier = quartier.trim(),
+                                    numero_parcelle = numeroParcelle.trim(),
+                                    commune_id = communeId,
+                                    devise = devise.trim(),
+                                    nombre_tranches = tranche.filter { it.isDigit() }.toIntOrNull() ?: 0,
+                                    tranche = tranche,
+                                    commentaire = commentaire.trim()
+                                )
+                                val response = ClientKtor().postData(clientAction, created)
+                                when (val status = response.status.value) {
+                                    in 200..299 -> {
                                         val res = response.body<ResponseAPI>()
-                                        Toast.makeText(ctx,res.message,Toast.LENGTH_LONG).show()
-                                        nom             = ""
-                                        prenom          = ""
+                                        val store = StoreData(ctx)
+                                        val existing = store.getDataClient.first().filterNotNull()
+                                        store.saveDataClient(existing + created)
+                                        Toast.makeText(ctx, res.message, Toast.LENGTH_LONG).show()
+                                        nom = ""
+                                        prenom = ""
                                         numeroParcelle = ""
-                                        telephone       = ""
-                                        avenue          = ""
-                                        communeId      = 0
-                                        quartier        = ""
+                                        telephone = ""
+                                        avenue = ""
+                                        quartier = ""
+                                        devise = ""
+                                        tranche = ""
+                                        commentaire = ""
+                                        communeId = 0
+                                        formError = null
+                                        resetKey += 1
                                     }
-                                    in 500..599 ->{
-                                        isActive = true
-                                        Toast.makeText(ctx,"Erreur serveur",Toast.LENGTH_LONG).show()
+                                    in 500..599 -> {
+                                        Toast.makeText(ctx, "Erreur serveur", Toast.LENGTH_LONG).show()
                                     }
-                                    in 400..499 ->{
-                                        isActive = true
+                                    in 400..499 -> {
                                         val res = response.body<ResponseAPI>()
-                                        Toast.makeText(ctx,res.message,Toast.LENGTH_LONG).show()
+                                        formError = res.message
+                                        Toast.makeText(ctx, res.message, Toast.LENGTH_LONG).show()
                                     }
-
+                                    else -> {
+                                        Toast.makeText(ctx, "Réponse inattendue ($status)", Toast.LENGTH_LONG).show()
+                                    }
                                 }
+                            } catch (error: Exception) {
+                                Toast.makeText(
+                                    ctx,
+                                    "Enregistrement impossible. Réessayez.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            } finally {
+                                isActive = true
                             }
                         }
-                        else{
-                            Toast.makeText(ctx,"Vous n'êtes pas connecté veuillez vérifier votre connexion !!!",Toast.LENGTH_LONG).show()
-                        }
-
                     }
-                ) {
-                    Text(text = if(isActive) "Enregistrer" else "Chargement...", fontSize = 16.sp, color = Color.White)
-                }
-                Space(y = 5)
+                )
             }
         }
     }
@@ -314,6 +295,6 @@ fun InscriptionPage(isConnected: Boolean) {
 
 @Composable
 @Preview
-fun InscriptionPageBody(){
-    InscriptionPage(isConnected =false)
+fun InscriptionPageBody() {
+    InscriptionPage(isConnected = false)
 }
