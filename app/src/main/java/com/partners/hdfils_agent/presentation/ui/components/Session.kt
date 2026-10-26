@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.partners.hdfils_agent.data.shared.StoreData
 import com.partners.hdfils_agent.domain.models.Agent
+import com.partners.hdfils_agent.domain.models.Client
 import com.partners.hdfils_agent.domain.models.ClientS
 import com.partners.hdfils_agent.domain.models.TrashClean
 
@@ -23,11 +24,13 @@ fun rememberAgent(): Agent? {
 }
 
 @Composable
-fun rememberClients(): List<ClientS> {
+fun rememberClients(): List<Client?> {
     val context = LocalContext.current
-    var items by remember { mutableStateOf<List<ClientS>>(emptyList()) }
+    var items by remember { mutableStateOf<List<Client?>>(emptyList()) }
     LaunchedEffect(Unit) {
-        StoreData(context).getDataClient.collect { items = it }
+        StoreData(context).getDataClient.collect {
+            items = it
+        }
     }
     return items
 }

@@ -167,7 +167,7 @@ fun ProfilePage(navC: NavHostController, isConnected: Boolean) {
             Button(
                 onClick = {
                     scope.launch {
-                        StoreData(context).clearSession()
+                        StoreData(context)
                         navC.navigate(ScreenRoute.Auth.name) {
                             popUpTo(navC.graph.id) { inclusive = true }
                         }

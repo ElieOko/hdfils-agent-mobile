@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.ui.res.painterResource
+import com.google.android.gms.common.util.CollectionUtils.listOf
 import com.partners.hdfils_agent.domain.models.Route
 import com.partners.hdfils_agent.R
 import com.partners.hdfils_agent.domain.models.Commune
@@ -13,9 +14,9 @@ import com.partners.hdfils_agent.domain.route.ScreenRoute
 class Constants {
     companion object {
         const val BASE_URL = "https://dummyjson.com/"
-        const val HOST_DEV = "192.168.1.84:8000/api"
-        const val HOST_PROD = "custom.cadeauparfait1.com/api"
-        const val IS_PROD = true
+        const val HOST_DEV = "192.168.2.77:8023/api"
+        const val HOST_PROD = "recolte.elieoko.com/api"
+        const val IS_PROD = false
         const val TokenLocal = ""
         val routeList = listOf(
             Route(R.drawable.home, title = "Accueil", routeName = ScreenRoute.Home.name),
