@@ -68,7 +68,7 @@ fun HomePageMain(navC: NavHostController, isConnected: Boolean) {
         ) {
             when (navigationSelectedItem) {
                 0 -> HomePage(isConnected)
-                1 -> InscriptionPage(isConnected)
+                1 -> ClientSection(isConnected)
                 2 -> CheckBopeto(isConnected)
                 3 -> ProfilePage(navC, isConnected)
             }
