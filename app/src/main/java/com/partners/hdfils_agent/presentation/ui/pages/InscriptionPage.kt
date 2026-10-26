@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -43,9 +42,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.partners.hdfils_agent.data.shared.StoreData
+import com.partners.hdfils_agent.data.utils.Constants.Companion.listDevise
 import com.partners.hdfils_agent.data.utils.Constants.Companion.listTranche
 import com.partners.hdfils_agent.data.utils.EndPoint.clientAction
 import com.partners.hdfils_agent.domain.models.Client
+import com.partners.hdfils_agent.domain.models.ClientCreate
 import com.partners.hdfils_agent.domain.remote.ClientKtor
 import com.partners.hdfils_agent.domain.remote.ResponseAPI
 import com.partners.hdfils_agent.presentation.ui.components.AppField
@@ -74,9 +75,9 @@ fun InscriptionPage(isConnected: Boolean) {
     var avenue by remember { mutableStateOf("") }
     var quartier by remember { mutableStateOf("") }
     var numeroParcelle by remember { mutableStateOf("") }
+    var montant by remember { mutableStateOf("") }
     var devise by remember { mutableStateOf("") }
-    var tranche by remember { mutableStateOf("") }
-    var commentaire by remember { mutableStateOf("") }
+    var nombreTranches by remember { mutableStateOf("") }
     var formError by remember { mutableStateOf<String?>(null) }
     val ctx = LocalContext.current
 
@@ -85,8 +86,9 @@ fun InscriptionPage(isConnected: Boolean) {
         nom.isBlank() -> "Le nom est obligatoire"
         prenom.isBlank() -> "Le prénom est obligatoire"
         telephone.isBlank() -> "Le téléphone est obligatoire"
-        devise.isBlank() -> "La devise est obligatoire"
-        tranche.isBlank() -> "Sélectionnez une tranche"
+        montant.toIntOrNull() == null || montant.toInt() <= 0 -> "Le montant de souscription est obligatoire"
+        devise.isBlank() -> "Sélectionnez une devise"
+        nombreTranches.toIntOrNull() == null -> "Sélectionnez le nombre de tranches"
         else -> null
     }
 
@@ -179,25 +181,27 @@ fun InscriptionPage(isConnected: Boolean) {
                 )
                 Spacer(Modifier.height(8.dp))
                 AppField(
-                    value = devise,
-                    onValueChange = { devise = it.take(16) },
-                    label = "Devise (FC, USD…)",
-                    icon = Icons.Default.Info
+                    value = montant,
+                    onValueChange = { montant = it.filter(Char::isDigit).take(9) },
+                    label = "Montant de souscription",
+                    icon = Icons.Default.Info,
+                    keyboardType = KeyboardType.Number
                 )
                 Spacer(Modifier.height(8.dp))
                 TrancheSelect(
-                    selected = tranche,
-                    onSelect = { tranche = it },
-                    options = listTranche
+                    label = "Devise",
+                    placeholder = "FC ou USD",
+                    selected = devise,
+                    onSelect = { devise = it },
+                    options = listDevise
                 )
                 Spacer(Modifier.height(8.dp))
-                AppField(
-                    value = commentaire,
-                    onValueChange = { commentaire = it },
-                    label = "Commentaire",
-                    icon = Icons.Default.Edit,
-                    singleLine = false,
-                    minLines = 3
+                TrancheSelect(
+                    label = "Nombre de tranches",
+                    placeholder = "Sélectionnez",
+                    selected = nombreTranches,
+                    onSelect = { nombreTranches = it },
+                    options = listTranche
                 )
                 if (formError != null) {
                     Text(
@@ -230,18 +234,17 @@ fun InscriptionPage(isConnected: Boolean) {
                         focusManager.clearFocus()
                         coroutineScope.launch {
                             try {
-                                val created = Client(
+                                val created = ClientCreate(
                                     nom = nom.trim(),
                                     prenom = prenom.trim(),
                                     telephone = telephone.trim(),
+                                    commune_id = communeId,
                                     avenue = avenue.trim(),
                                     quartier = quartier.trim(),
                                     numero_parcelle = numeroParcelle.trim(),
-                                    commune_id = communeId,
-                                    devise = devise.trim(),
-                                    nombre_tranches = tranche.filter { it.isDigit() }.toIntOrNull() ?: 0,
-                                    tranche = tranche,
-                                    commentaire = commentaire.trim()
+                                    montant_souscription = montant.toInt(),
+                                    devise = devise,
+                                    nombre_tranches = nombreTranches.toInt()
                                 )
                                 val response = ClientKtor().postData(clientAction, created)
                                 when (val status = response.status.value) {
@@ -249,7 +252,20 @@ fun InscriptionPage(isConnected: Boolean) {
                                         val res = response.body<ResponseAPI>()
                                         val store = StoreData(ctx)
                                         val existing = store.getDataClient.first().filterNotNull()
-                                        store.saveDataClient(existing + created)
+                                        store.saveDataClient(
+                                            existing + Client(
+                                                nom = created.nom,
+                                                prenom = created.prenom,
+                                                telephone = created.telephone,
+                                                avenue = created.avenue,
+                                                quartier = created.quartier,
+                                                numero_parcelle = created.numero_parcelle,
+                                                commune_id = created.commune_id,
+                                                montant_souscription = created.montant_souscription,
+                                                devise = created.devise,
+                                                nombre_tranches = created.nombre_tranches
+                                            )
+                                        )
                                         Toast.makeText(ctx, res.message, Toast.LENGTH_LONG).show()
                                         nom = ""
                                         prenom = ""
@@ -257,9 +273,9 @@ fun InscriptionPage(isConnected: Boolean) {
                                         telephone = ""
                                         avenue = ""
                                         quartier = ""
+                                        montant = ""
                                         devise = ""
-                                        tranche = ""
-                                        commentaire = ""
+                                        nombreTranches = ""
                                         communeId = 0
                                         formError = null
                                         resetKey += 1
