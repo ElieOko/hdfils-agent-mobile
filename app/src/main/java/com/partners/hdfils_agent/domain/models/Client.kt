@@ -16,6 +16,7 @@ data class Client(
     val nombre_tranches: Int = 0,
     val tranche: String = "",
     val commentaire: String = "",
+    val created_at: String? = null,
 )
 
 @Serializable

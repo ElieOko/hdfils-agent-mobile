@@ -46,6 +46,7 @@ import com.partners.hdfils_agent.domain.route.ScreenRoute
 import com.partners.hdfils_agent.presentation.ui.components.AppLogo
 import com.partners.hdfils_agent.presentation.ui.components.InfoRow
 import com.partners.hdfils_agent.presentation.ui.components.formatApiDate
+import com.partners.hdfils_agent.presentation.ui.components.SessionMemory
 import com.partners.hdfils_agent.presentation.ui.components.rememberAgent
 import com.partners.hdfils_agent.presentation.ui.components.rememberClients
 import com.partners.hdfils_agent.presentation.ui.theme.AppBackground
@@ -183,6 +184,7 @@ fun ProfilePage(navC: NavHostController, isConnected: Boolean) {
                 onClick = {
                     scope.launch {
                         StoreData(context).clearSession()
+                        SessionMemory.clear()
                         navC.navigate(ScreenRoute.Auth.name) {
                             popUpTo(navC.graph.id) { inclusive = true }
                         }

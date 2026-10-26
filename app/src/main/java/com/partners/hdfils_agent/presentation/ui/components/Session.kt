@@ -10,15 +10,29 @@ import androidx.compose.ui.platform.LocalContext
 import com.partners.hdfils_agent.data.shared.StoreData
 import com.partners.hdfils_agent.domain.models.Agent
 import com.partners.hdfils_agent.domain.models.Client
-import com.partners.hdfils_agent.domain.models.ClientS
 import com.partners.hdfils_agent.domain.models.TrashClean
+
+object SessionMemory {
+    var agent: Agent? = null
+    var clients: List<Client?> = emptyList()
+    var trash: List<TrashClean> = emptyList()
+
+    fun clear() {
+        agent = null
+        clients = emptyList()
+        trash = emptyList()
+    }
+}
 
 @Composable
 fun rememberAgent(): Agent? {
     val context = LocalContext.current
-    var agent by remember { mutableStateOf<Agent?>(null) }
+    var agent by remember { mutableStateOf(SessionMemory.agent) }
     LaunchedEffect(Unit) {
-        StoreData(context).getDataAgentAuth.collect { agent = it }
+        StoreData(context).getDataAgentAuth.collect {
+            SessionMemory.agent = it
+            agent = it
+        }
     }
     return agent
 }
@@ -26,9 +40,10 @@ fun rememberAgent(): Agent? {
 @Composable
 fun rememberClients(): List<Client?> {
     val context = LocalContext.current
-    var items by remember { mutableStateOf<List<Client?>>(emptyList()) }
+    var items by remember { mutableStateOf(SessionMemory.clients) }
     LaunchedEffect(Unit) {
         StoreData(context).getDataClient.collect {
+            SessionMemory.clients = it
             items = it
         }
     }
@@ -38,9 +53,12 @@ fun rememberClients(): List<Client?> {
 @Composable
 fun rememberTrashList(): List<TrashClean> {
     val context = LocalContext.current
-    var items by remember { mutableStateOf<List<TrashClean>>(emptyList()) }
+    var items by remember { mutableStateOf(SessionMemory.trash) }
     LaunchedEffect(Unit) {
-        StoreData(context).getDataClientTrash.collect { items = it }
+        StoreData(context).getDataClientTrash.collect {
+            SessionMemory.trash = it
+            items = it
+        }
     }
     return items
 }

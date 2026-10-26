@@ -13,6 +13,7 @@ import com.partners.hdfils_agent.domain.models.Agent
 import com.partners.hdfils_agent.domain.models.AgentAuth
 import com.partners.hdfils_agent.domain.models.Client
 import com.partners.hdfils_agent.domain.models.TrashClean
+import com.partners.hdfils_agent.domain.models.mergeCreatedAt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
@@ -88,17 +89,8 @@ class StoreData(private val context: Context) {
 
     val getDataClient: Flow<List<Client?>> = context.dataStore.data
         .map { preferences ->
-        val jsonString = preferences[CLIENT_]?.takeIf { it.isNotEmpty() } ?: ""
-        if (jsonString.isEmpty()) {
-            emptyList()
-        } else {
-            try {
-                gson.fromJson(jsonString, Array<Client>::class.java).toList()
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-    }.flowOn(Dispatchers.IO)
+            decodeClients(preferences[CLIENT_])
+        }.flowOn(Dispatchers.IO)
 
     suspend fun setLoggedIn(loggedIn: Boolean) {
         context.dataStore.edit { preferences ->
@@ -122,10 +114,22 @@ class StoreData(private val context: Context) {
             preferences[TRASH] = jsonString
         }
     }
-    suspend fun saveDataClient(client: List<Client>) {
+    suspend fun saveDataClient(client: List<Client>): List<Client> {
+        var merged = client
         context.dataStore.edit { preferences ->
-            val jsonString = gson.toJson(client)
-            preferences[CLIENT_] = jsonString
+            val previous = decodeClients(preferences[CLIENT_])
+            merged = mergeCreatedAt(client, previous)
+            preferences[CLIENT_] = gson.toJson(merged)
+        }
+        return merged
+    }
+
+    private fun decodeClients(json: String?): List<Client> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            gson.fromJson(json, Array<Client>::class.java)?.toList().orEmpty()
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
