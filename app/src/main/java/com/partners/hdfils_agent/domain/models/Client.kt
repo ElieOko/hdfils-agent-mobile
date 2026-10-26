@@ -32,6 +32,18 @@ data class ClientCreate(
     val nombre_tranches: Int,
 )
 
+fun Client.displayName(): String {
+    return listOf(prenom, nom)
+        .filter { it.isNotBlank() }
+        .joinToString(" ")
+        .ifBlank { "Client" }
+}
+
+fun Client.identityKey(): String {
+    return listOf(telephone, nom, prenom, numero_parcelle, commune_id.toString(), avenue)
+        .joinToString("|") { it.trim().lowercase() }
+}
+
 @Serializable
 data class Tranche(
     val numero: Int = 0,

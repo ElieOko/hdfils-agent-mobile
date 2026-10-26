@@ -20,8 +20,11 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,7 +66,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
-fun InscriptionPage(isConnected: Boolean) {
+fun InscriptionPage(isConnected: Boolean, onDone: (() -> Unit)? = null) {
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     var isActive by remember { mutableStateOf(true) }
@@ -100,6 +103,27 @@ fun InscriptionPage(isConnected: Boolean) {
             .verticalScroll(rememberScrollState())
             .padding(bottom = 28.dp)
     ) {
+        if (onDone != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp, top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onDone) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Retour à la liste",
+                        tint = BrandBlueDeep
+                    )
+                }
+                Text(
+                    text = "Retour à la liste",
+                    color = BrandBlueDeep,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -279,6 +303,7 @@ fun InscriptionPage(isConnected: Boolean) {
                                         communeId = 0
                                         formError = null
                                         resetKey += 1
+                                        onDone?.invoke()
                                     }
                                     in 500..599 -> {
                                         Toast.makeText(ctx, "Erreur serveur", Toast.LENGTH_LONG).show()

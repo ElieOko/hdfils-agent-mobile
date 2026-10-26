@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -91,6 +92,7 @@ fun AppLogo(
 fun ScreenHeader(
     title: String,
     subtitle: String,
+    onBack: (() -> Unit)? = null,
     onAction: (() -> Unit)? = null,
     actionIcon: ImageVector? = null,
     actionDescription: String = "",
@@ -107,6 +109,15 @@ fun ScreenHeader(
             .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (onBack != null) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Retour",
+                    tint = Color.White
+                )
+            }
+        }
         AppLogo(size = 54.dp)
         Column(
             modifier = Modifier
